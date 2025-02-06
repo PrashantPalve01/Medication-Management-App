@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^11.2.0",
+    "meditrack-application": "file:",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.1.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
