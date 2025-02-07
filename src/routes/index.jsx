@@ -1,13 +1,18 @@
 import { lazy } from "react";
+const Dashboard = lazy(() => import("../pages/Dashboard/Dashboard"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Chart = lazy(() => import("../pages/Chart"));
 const Profile = lazy(() => import("../pages/Profile"));
 const Settings = lazy(() => import("../pages/Settings"));
-const Tables = lazy(() => import("../pages/Tables"));
 const Reminders = lazy(() => import("../pages/Reminders"));
 const Medication = lazy(() => import("../pages/Medication"));
 
 const coreRoutes = [
+  {
+    path: "/dashboard",
+    title: "Dashboard",
+    component: Dashboard,
+  },
   {
     path: "/calendar",
     title: "Calender",
@@ -17,11 +22,6 @@ const coreRoutes = [
     path: "/profile",
     title: "Profile",
     component: Profile,
-  },
-  {
-    path: "/tables",
-    title: "Tables",
-    component: Tables,
   },
   {
     path: "/settings",

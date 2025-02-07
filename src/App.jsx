@@ -1,11 +1,12 @@
+// App.js
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import Dashboard from "./pages/Dashboard/Dashboard";
 import Loader from "./common/Loader";
 import routes from "./routes";
 
 const DefaultLayout = lazy(() => import("./layout/DefaultLayout"));
+const Landing = lazy(() => import("./pages/Landing"));
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +14,7 @@ function App() {
   useEffect(() => {
     setTimeout(() => setLoading(false), 1000);
   }, []);
+
   return loading ? (
     <Loader />
   ) : (
@@ -22,25 +24,29 @@ function App() {
         reverseOrder={false}
         containerClassName="overflow-auto"
       />
-      <Routes>
-        <Route element={<DefaultLayout />}>
-          <Route index element={<Dashboard />} />
-          {routes.map((routes, index) => {
-            const { path, component: Component } = routes;
-            return (
-              <Route
-                key={index}
-                path={path}
-                element={
-                  <Suspense fallback={<Loader />}>
-                    <Component />
-                  </Suspense>
-                }
-              />
-            );
-          })}
-        </Route>
-      </Routes>
+      <Suspense fallback={<Loader />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+
+          {/* All protected routes under DefaultLayout */}
+          <Route element={<DefaultLayout />}>
+            {routes.map((route, index) => {
+              const { path, component: Component } = route;
+              return (
+                <Route
+                  key={index}
+                  path={path}
+                  element={
+                    <Suspense fallback={<Loader />}>
+                      <Component />
+                    </Suspense>
+                  }
+                />
+              );
+            })}
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }
