@@ -3,13 +3,14 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBcbySbYvGwEnxkVBZeJ7QZ5uYCniNvux4",
-  authDomain: "cw2project-31d03.firebaseapp.com",
-  databaseURL: "https://cw2project-31d03-default-rtdb.firebaseio.com",
-  projectId: "cw2project-31d03",
-  storageBucket: "cw2project-31d03.firebasestorage.app",
-  messagingSenderId: "1075315305003",
-  appId: "1:1075315305003:web:26b34bc952e4481d17986e",
+  apiKey: "AIzaSyAXY3VpjYNkoSjvAUDzjkGgKouXD1HKfZ4",
+  authDomain: "ecommerceproduct-9a052.firebaseapp.com",
+  databaseURL: "https://ecommerceproduct-9a052-default-rtdb.firebaseio.com",
+  projectId: "ecommerceproduct-9a052",
+  storageBucket: "ecommerceproduct-9a052.firebasestorage.app",
+  messagingSenderId: "461380073535",
+  appId: "1:461380073535:web:d77c4b20860c9aa4a5608a",
+  measurementId: "G-QSSND729T2",
 };
 
 const app = initializeApp(firebaseConfig);

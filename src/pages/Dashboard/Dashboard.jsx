@@ -1,125 +1,130 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { auth, db } from "../../../firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import Breadcrumb from "../../components/Breadcrumb";
+import Loader from "../../common/Loader";
+import AddMedicationModal from "../../components/AddMedicationModal";
 
-const PatientTracker = () => {
-  const [patientData, setPatientData] = useState({
-    fullName: "",
-    dob: "",
-    gender: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
+const Dashboard = () => {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setPatientData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const saveData = async () => {
-    if (!patientData.phone) {
-      alert("Phone number is required!");
-      return;
-    }
-  
-    // Generate unique patient ID (e.g., Patient2024-12345)
-    const uniqueId = `Patient${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
-  
-    try {
-      const response = await fetch(
-        `https://medicationreports-default-rtdb.firebaseio.com/patients/${uniqueId}.json`,
-        {
-          method: "PUT", // Ensure patient data is stored under a unique ID
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...patientData, id: uniqueId }), // Store patient ID in the record
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc = await getDocs(
+            query(collection(db, "Users"), where("email", "==", user.email))
+          );
+          if (!userDoc.empty) {
+            setUserData(userDoc.docs[0].data());
+          }
         }
-      );
-  
-      if (!response.ok) throw new Error("Failed to save data");
-  
-      alert(`Patient information saved successfully! ID: ${uniqueId}`);
-    } catch (error) {
-      alert("Error saving data: " + error.message);
-    }
-  };
-  
-  
+        setLoading(false);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">Patient Tracker</h2>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium">Full Name</label>
-          <input
-            type="text"
-            name="fullName"
-            value={patientData.fullName}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
+    <>
+      <Breadcrumb pageName="Dashboard" />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+        <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+          <h4 className="text-xl font-semibold text-black dark:text-white">
+            Welcome, {userData?.firstName || "User"}
+          </h4>
+          <p className="text-sm">Medication Management Dashboard</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Date of Birth</label>
-          <input
-            type="date"
-            name="dob"
-            value={patientData.dob}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
+
+        <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+          <h4 className="mb-2 text-xl font-semibold text-black dark:text-white">
+            Today's Medications
+          </h4>
+          <p className="text-meta-3">3 Pending</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Gender</label>
-          <select
-            name="gender"
-            value={patientData.gender}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+
+        <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+          <h4 className="mb-2 text-xl font-semibold text-black dark:text-white">
+            Prescriptions
+          </h4>
+          <p className="text-meta-5">2 Need Renewal</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Phone</label>
-          <input
-            type="text"
-            name="phone"
-            value={patientData.phone}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
+
+        <div className="rounded-sm border border-stroke bg-white p-4 shadow-default dark:border-strokedark dark:bg-boxdark">
+          <h4 className="mb-2 text-xl font-semibold text-black dark:text-white">
+            Adherence Rate
+          </h4>
+          <p className="text-primary">85%</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={patientData.email}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Address</label>
-          <textarea
-            name="address"
-            value={patientData.address}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <button
-          onClick={saveData}
-          className="w-full border-2 border-blue-500 text-black p-2 rounded mt-4 hover:bg-blue-100"
-        >
-          Save Patient Information
-        </button>
       </div>
-    </div>
+
+      <div className="mt-4 grid grid-cols-12 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5">
+        <div className="col-span-12 xl:col-span-8">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-4 py-4 dark:border-strokedark">
+              <h3 className="font-medium text-black dark:text-white">
+                Quick Actions
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="w-full rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90"
+                >
+                  Add New Medication
+                </button>
+                <button className="w-full rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+                  Request Prescription Renewal
+                </button>
+                <button className="w-full rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+                  View Medication History
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-12 xl:col-span-4">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-4 py-4 dark:border-strokedark">
+              <h3 className="font-medium text-black dark:text-white">
+                Upcoming Reminders
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="flex flex-col gap-4">
+                <div className="rounded border border-stroke p-3 dark:border-strokedark">
+                  <p className="text-sm font-medium">Medicine A</p>
+                  <p className="text-xs text-meta-3">Today, 2:00 PM</p>
+                </div>
+                <div className="rounded border border-stroke p-3 dark:border-strokedark">
+                  <p className="text-sm font-medium">Medicine B</p>
+                  <p className="text-xs text-meta-3">Today, 8:00 PM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AddMedicationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 };
 
-export default PatientTracker;
+export default Dashboard;

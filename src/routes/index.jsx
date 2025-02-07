@@ -5,7 +5,7 @@ const Chart = lazy(() => import("../pages/Chart"));
 const Profile = lazy(() => import("../pages/Profile"));
 const Settings = lazy(() => import("../pages/Settings"));
 const Reminders = lazy(() => import("../pages/Reminders"));
-const Medication = lazy(() => import("../pages/Medication"));
+const Medication = lazy(() => import("../pages/MedicationList"));
 
 const coreRoutes = [
   {
