@@ -1,15 +1,33 @@
 import {useState}from 'react'
 import { Link } from 'react-router-dom';
 import "./loginpage.css"
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './firebase';
+import {toast} from "react-toastify"
 function Login() {
     const [email,setEmail]= useState("");
     const [password,setPassword]=useState("")
+
+    const handleSubmit= async(e)=>
+    {
+        e.preventDefault()
+        try{
+            await signInWithEmailAndPassword(auth,email,password)
+            console.log("Logged successfully")
+            toast.success("Login Successfull!!", {position:"top-center"})
+        }
+        catch(error)
+        {
+            console.log("Error")
+            toast.error(error.message, {position:"top-center"})
+        }
+    }
   return (
     <>
         <div className='main-div'>
             <div className='login-form'>
                 <h1><center>Login</center></h1>
-                <form action="">
+                <form onSubmit={handleSubmit}>
                     <div className='mb-3'>
                         <label >Email Address</label>
                         <input 
