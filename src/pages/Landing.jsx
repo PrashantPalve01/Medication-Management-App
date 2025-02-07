@@ -10,7 +10,7 @@ const Landing = () => {
         <div className="nav">
           <div className="nav-first">
             <h1>
-              <img src={Logo} alt="my Theraphy" />
+              <img src={Logo} alt="my Theraphy" className="logo" />
             </h1>
           </div>
           <div className="between-head">
@@ -23,11 +23,11 @@ const Landing = () => {
         <div className="first-section">
           <div className="first-section-first">
             <h1>Reliable medication reminders for you </h1>
-            <p>
+            <p className="mt-3">
               MyTherapy is your personal, digital health companion. Reliable
               medication reminders and consistent documentation of your intakes.
             </p>
-            <p>
+            <p className="mb-3">
               <strong>Download now for free!</strong>
             </p>
             <div className="first-section-apps">

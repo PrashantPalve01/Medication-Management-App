@@ -24,7 +24,7 @@ function SignUp() {
           lastName: lname,
         });
       }
-      console.log("User registered successfully");
+      alert("User registered successfully");
       toast.success("User Registered Successfully!!", {
         position: "top-center",
       });
