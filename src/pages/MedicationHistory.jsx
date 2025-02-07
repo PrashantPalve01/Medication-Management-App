@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { format, subDays, startOfWeek, endOfWeek } from "date-fns";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db, auth } from "../../firebase";
@@ -168,22 +159,47 @@ const MedicationHistory = () => {
         </div>
       </div>
 
-      {/* Adherence Chart */}
-      <div className="h-64 mb-6">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={adherenceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="adherenceRate"
-              stroke="#3b82f6"
-              name="Adherence Rate (%)"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* Simple Adherence Visualization */}
+      <div className="mb-6">
+        <div className="grid grid-cols-7 gap-2">
+          {adherenceData.map((data, index) => (
+            <div key={data.date} className="flex flex-col items-center">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {data.date}
+              </div>
+              <div className="w-full h-24 bg-gray-100 dark:bg-gray-700 rounded-lg mt-1 relative">
+                <div
+                  className="absolute bottom-0 w-full bg-primary rounded-lg transition-all duration-300"
+                  style={{ height: `${data.adherenceRate}%` }}
+                >
+                  <div className="text-white text-xs text-center mt-1">
+                    {data.adherenceRate}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <h4 className="text-sm font-medium mb-2">Total Doses</h4>
+          <p className="text-2xl font-semibold">{medicationLogs.length}</p>
+        </div>
+        <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <h4 className="text-sm font-medium mb-2">Doses Taken</h4>
+          <p className="text-2xl font-semibold text-success">
+            {medicationLogs.filter((log) => log.status === "taken").length}
+          </p>
+        </div>
+        <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <h4 className="text-sm font-medium mb-2">Doses Missed</h4>
+          <p className="text-2xl font-semibold text-danger">
+            {medicationLogs.filter((log) => log.status === "missed").length}
+          </p>
+        </div>
       </div>
 
       {/* Medication Logs */}
