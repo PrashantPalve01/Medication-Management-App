@@ -7,6 +7,7 @@
   justify-content: space-around; /* Ensures proper spacing between elements */
   align-items: center;
   flex-wrap: wrap;
+  background-color: rgb(227, 211, 191);
 }
 .nav-first {
   width: 30vw;
@@ -20,7 +21,15 @@
   align-items: center;
   font-size: larger;
 }
-
+.between-head button {
+  border: 1px solid gray;
+  background-color: white;
+  padding: 5px 20px;
+  border-radius: 5px;
+}
+.logo {
+  height: 70px;
+}
 .first-section {
   width: 85vw;
   margin: 0 auto;

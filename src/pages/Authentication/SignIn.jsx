@@ -4,6 +4,7 @@ import "./LoginSignUp.css";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebase";
 import { toast } from "react-toastify";
+
 function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +14,7 @@ function SignIn() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("Logged successfully");
+      alert("Logged successfully");
       toast.success("Login Successfull!!", { position: "top-center" });
 
       navigate("/dashboard");

@@ -1,13 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-
-import UserOne from "../images/user/user-01.png";
-
+import { auth, db } from "../../firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
+  const [userData, setUserData] = useState(null);
   const trigger = useRef(null);
   const dropdown = useRef(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDocs(
+          query(collection(db, "Users"), where("email", "==", user.email))
+        );
+        if (!userDoc.empty) {
+          setUserData(userDoc.docs[0].data());
+        }
+      }
+    };
+    fetchUserData();
+  }, []);
 
   // close on click outside
   useEffect(() => {
@@ -45,12 +59,20 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black dark:text-white">
-            Prashant Palve
+            {userData?.firstName || "User"} {userData?.lastName || ""}
           </span>
         </span>
 
-        <span className="h-12 w-12 rounded-full">
-          <img src={UserOne} alt="User" />
+        <span className="h-12 w-12 rounded-full overflow-hidden">
+          <img
+            src={
+              userData?.photo
+                ? userData.photo
+                : "https://via.placeholder.com/150"
+            }
+            alt="User"
+            className="h-full w-full object-cover"
+          />
         </span>
 
         <svg
