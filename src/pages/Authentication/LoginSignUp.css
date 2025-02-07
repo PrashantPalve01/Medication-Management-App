@@ -1,0 +1,88 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+.main-div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to right, #667eea, #764ba2);
+}
+
+.login-form {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+  width: 380px;
+  text-align: center;
+}
+
+.login-form h1 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.login-form label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
+  margin-bottom: 5px;
+  margin-top: 10px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease-in-out;
+}
+
+.login-form input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+}
+
+.btn-signUp,
+.btn-login {
+  background: #667eea !important;
+  color: white !important; /* Ensures the text is white */
+  padding: 12px;
+  font-size: 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.btn-signUp:hover {
+  background: #5a67d8;
+  color: white !important; /* Ensures the text remains white */
+}
+
+.signup {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.signup p {
+  color: #333;
+}
+
+@media (max-width: 400px) {
+  .login-form {
+    width: 90%;
+    padding: 2rem;
+  }
+}
