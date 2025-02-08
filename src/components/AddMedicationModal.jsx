@@ -12,12 +12,29 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
     instructions: "",
     remainingQuantity: "",
     prescribedBy: "",
+    // New fields for tracking
+    adherenceRate: 0,
+    totalDoses: 0,
+    dosesTaken: 0,
+    status: "active",
+    nextDoseTime: "",
+    reminder: false,
+    notes: "",
+    type: "",
+    refillReminder: false,
+    refillThreshold: 5, // Default reminder when 5 doses remaining
+    sideEffects: [],
+    priority: "medium",
+    timingPreference: "",
+    lastTaken: null,
   });
 
   const handleInputChange = (e) => {
+    const value =
+      e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setMedicationData({
       ...medicationData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     });
   };
 
@@ -26,10 +43,19 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
     try {
       const user = auth.currentUser;
       if (user) {
+        const timestamp = new Date();
         await addDoc(collection(db, "Users", user.uid, "medications"), {
           ...medicationData,
-          createdAt: new Date(),
+          createdAt: timestamp,
+          lastUpdated: timestamp,
           status: "active",
+          adherenceStats: {
+            adherenceRate: 0,
+            totalDoses: 0,
+            dosesTaken: 0,
+            missedDoses: 0,
+            lastTracked: timestamp,
+          },
         });
         onClose();
       }
@@ -61,6 +87,7 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
           <div className="px-6 py-4">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
+                {/* Existing fields */}
                 <div className="col-span-2">
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     Medication Name
@@ -74,6 +101,43 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                   />
                 </div>
 
+                {/* Type and Priority */}
+                <div>
+                  <label className="mb-2.5 block font-medium text-black dark:text-white">
+                    Medication Type
+                  </label>
+                  <select
+                    name="type"
+                    onChange={handleInputChange}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                    required
+                  >
+                    <option value="">Select Type</option>
+                    <option value="tablet">Tablet</option>
+                    <option value="capsule">Capsule</option>
+                    <option value="liquid">Liquid</option>
+                    <option value="injection">Injection</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2.5 block font-medium text-black dark:text-white">
+                    Priority
+                  </label>
+                  <select
+                    name="priority"
+                    onChange={handleInputChange}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                    required
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                {/* Existing dosage and frequency fields */}
                 <div>
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     Dosage
@@ -105,6 +169,38 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                   </select>
                 </div>
 
+                {/* Timing Preference */}
+                <div>
+                  <label className="mb-2.5 block font-medium text-black dark:text-white">
+                    Preferred Timing
+                  </label>
+                  <input
+                    type="time"
+                    name="timingPreference"
+                    onChange={handleInputChange}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                  />
+                </div>
+
+                {/* Reminder Settings */}
+                <div>
+                  <label className="mb-2.5 block font-medium text-black dark:text-white">
+                    Enable Reminders
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="reminder"
+                      onChange={handleInputChange}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-600">
+                      Send dose reminders
+                    </span>
+                  </div>
+                </div>
+
+                {/* Existing date fields */}
                 <div>
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     Start Date
@@ -130,6 +226,7 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                   />
                 </div>
 
+                {/* Remaining fields */}
                 <div className="col-span-2">
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     Instructions
@@ -166,6 +263,19 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
                   />
+                </div>
+
+                {/* Notes field */}
+                <div className="col-span-2">
+                  <label className="mb-2.5 block font-medium text-black dark:text-white">
+                    Additional Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    onChange={handleInputChange}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                    rows="2"
+                  ></textarea>
                 </div>
               </div>
 

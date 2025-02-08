@@ -118,7 +118,7 @@ const MedicationHistory = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-24">Loading...</div>
+      <h1 className="flex justify-center items-center text-2xl">Loading...</h1>
     );
   }
 

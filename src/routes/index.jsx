@@ -7,6 +7,7 @@ const Settings = lazy(() => import("../pages/Settings"));
 const Reminders = lazy(() => import("../pages/MedicationReminders"));
 const Medication = lazy(() => import("../pages/MedicationList"));
 const MedicationHistory = lazy(() => import("../pages/MedicationHistory"));
+const MedicationDetail = lazy(() => import("../components/MedicationDetail"));
 
 const coreRoutes = [
   {
@@ -26,8 +27,13 @@ const coreRoutes = [
   },
   {
     path: "/medicationhistory",
-    title: "MedicationHistory",
+    title: "Medication History",
     component: MedicationHistory,
+  },
+  {
+    path: "/medications/:id",
+    title: "Medication Details",
+    component: MedicationDetail,
   },
   {
     path: "/settings",
