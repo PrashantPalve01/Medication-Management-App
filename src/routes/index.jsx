@@ -1,4 +1,5 @@
 import { lazy } from "react";
+
 const Dashboard = lazy(() => import("../pages/Dashboard/Dashboard"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Chart = lazy(() => import("../pages/Chart"));
@@ -6,6 +7,7 @@ const Profile = lazy(() => import("../pages/Profile"));
 const Settings = lazy(() => import("../pages/Settings"));
 const Reminders = lazy(() => import("../pages/MedicationReminders"));
 const Medication = lazy(() => import("../pages/MedicationList"));
+const EditProfile = lazy(() => import("../pages/EditProfilePages"));
 const MedicationHistory = lazy(() => import("../pages/MedicationHistory"));
 const MedicationDetail = lazy(() => import("../components/MedicationDetail"));
 
@@ -17,7 +19,7 @@ const coreRoutes = [
   },
   {
     path: "/calendar",
-    title: "Calender",
+    title: "Calendar",
     component: Calendar,
   },
   {
@@ -54,6 +56,11 @@ const coreRoutes = [
     path: "/medication",
     title: "Medication",
     component: Medication,
+  },
+  {
+    path: "/edit-profile",
+    title: "Edit Profile",
+    component: EditProfile,
   },
 ];
 
