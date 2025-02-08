@@ -1,3 +1,4 @@
+/* Global Reset */
 * {
   margin: 0;
   padding: 0;
@@ -5,14 +6,17 @@
   font-family: "Poppins", sans-serif;
 }
 
+/* Centering the Main Container */
 .main-div {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(to right, #667eea, #764ba2);
+  background: linear-gradient(to right, #6f9fff, #e2e8f0); /* Light grayish gradient */
 }
 
+
+/* Login Form */
 .login-form {
   background: white;
   padding: 2.5rem;
@@ -20,14 +24,22 @@
   box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
   width: 380px;
   text-align: center;
+  transition: all 0.3s ease-in-out;
 }
 
+.login-form:hover {
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Heading */
 .login-form h1 {
   font-size: 24px;
   margin-bottom: 15px;
   color: #333;
+  font-weight: 600;
 }
 
+/* Labels */
 .login-form label {
   display: block;
   font-weight: 600;
@@ -37,6 +49,7 @@
   margin-top: 10px;
 }
 
+/* Input Fields */
 .login-form input {
   width: 100%;
   padding: 12px;
@@ -44,18 +57,22 @@
   border-radius: 8px;
   font-size: 16px;
   transition: all 0.3s ease-in-out;
+  background-color: #f8f9fa;
 }
 
+/* Input Focus Effect */
 .login-form input:focus {
   border-color: #667eea;
   outline: none;
   box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+  background-color: #ffffff;
 }
 
+/* Button Styling */
 .btn-signUp,
 .btn-login {
-  background: #667eea !important;
-  color: white !important; /* Ensures the text is white */
+  background: #667eea;
+  color: white;
   padding: 12px;
   font-size: 18px;
   border: none;
@@ -64,13 +81,17 @@
   transition: 0.3s;
   width: 100%;
   margin-top: 15px;
+  font-weight: 600;
 }
 
-.btn-signUp:hover {
+/* Button Hover Effect */
+.btn-signUp:hover,
+.btn-login:hover {
   background: #5a67d8;
-  color: white !important; /* Ensures the text remains white */
+  transform: scale(1.05);
 }
 
+/* Sign Up Section */
 .signup {
   margin-top: 15px;
   font-size: 14px;
@@ -80,6 +101,19 @@
   color: #333;
 }
 
+.signup a {
+  text-decoration: none;
+  font-weight: 600;
+  color: #667eea;
+  transition: all 0.3s ease-in-out;
+}
+
+.signup a:hover {
+  text-decoration: underline;
+  color: #5a67d8;
+}
+
+/* Mobile Responsive */
 @media (max-width: 400px) {
   .login-form {
     width: 90%;

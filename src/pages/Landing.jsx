@@ -1,65 +1,85 @@
-import React from "react";
-import "../CSS/Landing.css";
-import Logo from "../images/logo/logo.svg";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../images/logo/logo.svg";
+import model from"../images/landingpage/Picsart_25-02-08_21-36-00-562.png"
+import dashboard from"../images/landingpage/Dashboard.jpg"
+import medicationlist from"../images/landingpage/medication-list.jpg"
+import reminderpage from"../images/landingpage/reminders-page.jpg"
+import trackedmedication from"../images/landingpage/tracked-medication-history.jpg"
+import { FiSun, FiMoon, FiLogIn, FiUserPlus, FiMenu, FiX } from "react-icons/fi";import "../CSS/Landing.css";
 const Landing = () => {
   const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+    }
+    localStorage.setItem("theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
   return (
     <div>
-      <nav>
-        <div className="nav">
-          <div className="nav-first">
-            <h1>
-              <img src={Logo} alt="my Theraphy" className="logo" />
-            </h1>
-          </div>
-          <div className="between-head">
-            <button onClick={() => navigate("/signin")}>Login</button>
-            <button onClick={() => navigate("/signup")}>Sign Up</button>
-          </div>
+      <nav className="navbar">
+      <div className="nav-container">
+        {/* Logo Section */}
+        <div className="nav-logo">
+          {/* <img src={Logo} className="logo" /> */}
+          <h1 className="head-name">MEDITRACK</h1>
         </div>
-      </nav>
-      <section className="sec1">
-        <div className="first-section">
-          <div className="first-section-first">
-            <h1>Reliable medication reminders for you </h1>
-            <p className="mt-3">
-              MyTherapy is your personal, digital health companion. Reliable
-              medication reminders and consistent documentation of your intakes.
-            </p>
-            <p className="mb-3">
-              <strong>Download now for free!</strong>
-            </p>
-            <div className="first-section-apps">
-              <a
-                href="https://itunes.apple.com/gb/app/mytherapy-meds-pill-reminder/id662170995?mt=8"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <img
-                  src="https://www.mytherapyapp.com/media/pages/en/b005a924e6-1733691130/badge-appstore-en-optimized.svg"
-                  alt="Get it on the App Store"
-                />
-              </a>
-              <a
-                href="https://play.google.com/store/apps/details?id=eu.smartpatient.mytherapy&amp;referrer=utm_source%3Dwebsite-en"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <img
-                  src="https://www.mytherapyapp.com/media/pages/en/1f24653710-1733691130/badge-googleplay-en-optimized.svg"
-                  alt="Get it on Google Play"
-                />
-              </a>
-            </div>
+
+        {/* Mobile Menu Button */}
+        <button 
+          className="mobile-menu-btn"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+        </button>
+
+        {/* Navigation Links */}
+        <div className={`nav-links ${menuOpen ? "show" : ""}`}>
+          <button 
+            onClick={() => navigate("/signin")} 
+            className="nav-btn login-btn"
+          >
+            <FiLogIn /> <span>Login</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/signup")} 
+            className="nav-btn signup-btn"
+          >
+            <FiUserPlus /> <span>Sign Up</span>
+          </button>
+
+          <button 
+            onClick={() => setDarkMode(!darkMode)} 
+            className="nav-btn theme-btn"
+            aria-label="Toggle theme"
+          >
+            {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+          </button>
+        </div>
+      </div>
+    </nav>
+    <section className="sec3">
+        <div className="model-section">
+          <div className="model-section-second">
+            <img
+              src={model}
+              alt="img"
+            />
           </div>
-          <div className="first-section-second">
-            <div>
-              <img
-                src="https://www.mytherapyapp.com/media/pages/en/home/37fb82e5e5-1733690892/web-img1-hero-11-q65-optimized.png"
-                alt="img"
-              />
-            </div>
+          <div className="model-section-first">
+            <h2>
+                MediTracker - Your Personal Health Companion
+            </h2>
+            <p>
+               MediTracker is an intuitive and user-friendly platform designed to help users efficiently track their medications, appointments, and health records. It ensures timely medication reminders and provides a seamless way to manage personal health data in one place.
+            </p>
           </div>
         </div>
       </section>
@@ -67,21 +87,15 @@ const Landing = () => {
         <div className="first-section">
           <div className="first-section-first">
             <h2>
-              Get reminded of all your intakes thanks to reliable medication
-              alarms
+              MediTracker Dashboard – Your Health at a Glance
             </h2>
             <p>
-              Reliable reminders for your tablets, pills and other medications
-              as well as measurements, doctor’s appointments or symptom checks.
-            </p>
-            <p>
-              The MyTherapy app keeps an eye on your medications and therapy for
-              you, so you can focus on other important things.
+            The MediTracker Dashboard provides users with a comprehensive view of their medication routine and health updates. It helps in managing upcoming medications, tracking missed doses, and ensuring timely renewals—all in one place.
             </p>
           </div>
           <div className="first-section-second">
             <img
-              src="https://www.mytherapyapp.com/media/pages/en/home/d8d17f399e-1733690891/group-869-1-q65-optimized.png"
+              src={dashboard}
               alt="img"
             />
           </div>
@@ -91,22 +105,16 @@ const Landing = () => {
         <div className="first-section">
           <div className="first-section-second">
             <img
-              src="https://www.mytherapyapp.com/media/pages/en/home/cf0996ec1c-1733690891/web-img-eng-doctor-q65-optimized.png"
+              src={medicationlist}
               alt="img"
             />
           </div>
           <div className="first-section-first">
             <h2>
-              Get reminded of all your intakes thanks to reliable medication
-              alarms
+               Medication List – Track Your Prescriptions Easily
             </h2>
             <p>
-              Reliable reminders for your tablets, pills and other medications
-              as well as measurements, doctor’s appointments or symptom checks.
-            </p>
-            <p>
-              The MyTherapy app keeps an eye on your medications and therapy for
-              you, so you can focus on other important things.
+            The Medication List section provides a structured view of all your ongoing prescriptions, ensuring you never miss a dose. It helps in tracking medication details and managing your routine effectively.
             </p>
           </div>
         </div>
@@ -115,21 +123,15 @@ const Landing = () => {
         <div className="first-section">
           <div className="first-section-first">
             <h2>
-              Get reminded of all your intakes thanks to reliable medication
-              alarms
+            Today's Medical Schedule – Stay on Track with Your Medications
             </h2>
             <p>
-              Reliable reminders for your tablets, pills and other medications
-              as well as measurements, doctor’s appointments or symptom checks.
-            </p>
-            <p>
-              The MyTherapy app keeps an eye on your medications and therapy for
-              you, so you can focus on other important things.
+            The Today's Medical Schedule section helps you stay organized by displaying upcoming and past medication reminders. It ensures that you take your medicines on time and track any missed doses.
             </p>
           </div>
           <div className="first-section-second">
             <img
-              src="https://www.mytherapyapp.com/media/pages/en/home/aa3bb9440d-1733690891/group-870-1-q65-optimized.png"
+              src={reminderpage}
               alt="img"
             />
           </div>
@@ -139,50 +141,21 @@ const Landing = () => {
         <div className="first-section">
           <div className="first-section-second">
             <img
-              src="https://www.mytherapyapp.com/media/pages/en/home/44fb462e87-1733690891/group-871-1-q65-optimized.png"
+              src={trackedmedication}
               alt="img"
             />
           </div>
           <div className="first-section-first">
             <h2>
-              Get reminded of all your intakes thanks to reliable medication
-              alarms
+            Medication History – Track Your Progress
             </h2>
             <p>
-              Reliable reminders for your tablets, pills and other medications
-              as well as measurements, doctor’s appointments or symptom checks.
-            </p>
-            <p>
-              The MyTherapy app keeps an eye on your medications and therapy for
-              you, so you can focus on other important things.
+            The Medication History section provides a clear record of your medication adherence, helping you stay informed about your progress and identify any missed doses.
             </p>
           </div>
         </div>
       </section>
-      <section className="sec2">
-        <div className="first-section">
-          <div className="first-section-first">
-            <h2>
-              Get reminded of all your intakes thanks to reliable medication
-              alarms
-            </h2>
-            <p>
-              Reliable reminders for your tablets, pills and other medications
-              as well as measurements, doctor’s appointments or symptom checks.
-            </p>
-            <p>
-              The MyTherapy app keeps an eye on your medications and therapy for
-              you, so you can focus on other important things.
-            </p>
-          </div>
-          <div className="first-section-second">
-            <img
-              src="https://www.mytherapyapp.com/media/pages/en/home/aa3bb9440d-1733690891/group-870-1-q65-optimized.png"
-              alt="img"
-            />
-          </div>
-        </div>
-      </section>
+      
     </div>
   );
 };
