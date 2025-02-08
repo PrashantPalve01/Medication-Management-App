@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { auth, db } from "../../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
@@ -12,7 +12,6 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
     instructions: "",
     remainingQuantity: "",
     prescribedBy: "",
-    // New fields for tracking
     adherenceRate: 0,
     totalDoses: 0,
     dosesTaken: 0,
@@ -22,12 +21,54 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
     notes: "",
     type: "",
     refillReminder: false,
-    refillThreshold: 5, // Default reminder when 5 doses remaining
+    refillThreshold: 5,
     sideEffects: [],
     priority: "medium",
-    timingPreference: "",
+    timingPreferences: [], // Array to store multiple timing preferences
     lastTaken: null,
   });
+
+  // Function to get number of doses based on frequency
+  const getNumberOfDoses = (frequency) => {
+    switch (frequency) {
+      case "once":
+        return 1;
+      case "twice":
+        return 2;
+      case "thrice":
+        return 3;
+      case "custom":
+        return 4; // You can modify this for custom frequency
+      default:
+        return 0;
+    }
+  };
+
+  // Handle frequency change to reset timing preferences
+  const handleFrequencyChange = (e) => {
+    const frequency = e.target.value;
+    const numberOfDoses = getNumberOfDoses(frequency);
+
+    // Initialize empty timing preferences array based on frequency
+    const timingPreferences = Array(numberOfDoses).fill("");
+
+    setMedicationData({
+      ...medicationData,
+      frequency,
+      timingPreferences,
+    });
+  };
+
+  // Handle timing preference change
+  const handleTimingChange = (index, value) => {
+    const newTimingPreferences = [...medicationData.timingPreferences];
+    newTimingPreferences[index] = value;
+
+    setMedicationData({
+      ...medicationData,
+      timingPreferences: newTimingPreferences,
+    });
+  };
 
   const handleInputChange = (e) => {
     const value =
@@ -62,6 +103,34 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error("Error adding medication:", error);
     }
+  };
+
+  // Render timing preference inputs based on frequency
+  const renderTimingInputs = () => {
+    const numberOfDoses = getNumberOfDoses(medicationData.frequency);
+
+    if (numberOfDoses === 0) return null;
+
+    return Array.from({ length: numberOfDoses }).map((_, index) => (
+      <div key={index}>
+        <label className="mb-2.5 block font-medium text-black dark:text-white">
+          {index === 0
+            ? "First Dose Time"
+            : index === 1
+            ? "Second Dose Time"
+            : index === 2
+            ? "Third Dose Time"
+            : `Dose ${index + 1} Time`}
+        </label>
+        <input
+          type="time"
+          value={medicationData.timingPreferences[index] || ""}
+          onChange={(e) => handleTimingChange(index, e.target.value)}
+          className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+          required
+        />
+      </div>
+    ));
   };
 
   if (!isOpen) return null;
@@ -151,13 +220,14 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                   />
                 </div>
 
+                {/* Updated Frequency field */}
                 <div>
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     Frequency
                   </label>
                   <select
                     name="frequency"
-                    onChange={handleInputChange}
+                    onChange={handleFrequencyChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
                   >
@@ -169,18 +239,12 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
                   </select>
                 </div>
 
-                {/* Timing Preference */}
-                <div>
-                  <label className="mb-2.5 block font-medium text-black dark:text-white">
-                    Preferred Timing
-                  </label>
-                  <input
-                    type="time"
-                    name="timingPreference"
-                    onChange={handleInputChange}
-                    className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                  />
-                </div>
+                {/* Dynamic Timing Preferences */}
+                {medicationData.frequency && (
+                  <div className="col-span-2 grid grid-cols-2 gap-4">
+                    {renderTimingInputs()}
+                  </div>
+                )}
 
                 {/* Reminder Settings */}
                 <div>
