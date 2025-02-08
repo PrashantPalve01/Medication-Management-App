@@ -1,9 +1,4 @@
-import { ReactNode, useState } from "react";
-
-// interface SidebarLinkGroupProps {
-//   children: (handleClick: () => void, open: boolean) => ReactNode;
-//   activeCondition: boolean;
-// }
+import { useState } from "react";
 
 const SidebarLinkGroup = ({ children, activeCondition }) => {
   const [open, setOpen] = useState(activeCondition);

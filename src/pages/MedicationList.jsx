@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { auth, db } from "../../firebase";
 import { collection, query, getDocs } from "firebase/firestore";
 import { format } from "date-fns";
-import Loader from "../common/Loader";
 import Breadcrumb from "../components/Breadcrumb";
 import AddMedicationModal from "../components/AddMedicationModal";
+import { useNavigate } from "react-router-dom";
 
 const MedicationList = () => {
   const [medications, setMedications] = useState([]);
@@ -13,6 +13,7 @@ const MedicationList = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const navigate = useNavigate();
   useEffect(() => {
     fetchMedications();
   }, []);
@@ -57,7 +58,9 @@ const MedicationList = () => {
   };
 
   if (loading) {
-    return <Loader />;
+    return (
+      <h1 className="flex justify-center items-center text-2xl">Loading...</h1>
+    );
   }
 
   return (
@@ -150,7 +153,11 @@ const MedicationList = () => {
             </thead>
             <tbody>
               {filteredMedications.map((medication, index) => (
-                <tr key={medication.id}>
+                <tr
+                  key={medication.id}
+                  onClick={() => navigate(`/medications/${medication.id}`)}
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-meta-4"
+                >
                   <td className="border-b border-[#eee] py-5 px-4 pl-9 xl:pl-11">
                     <h5 className="font-medium text-black dark:text-white">
                       {medication.name}

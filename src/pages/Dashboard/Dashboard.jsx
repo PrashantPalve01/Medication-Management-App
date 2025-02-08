@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { auth, db } from "../../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import Breadcrumb from "../../components/Breadcrumb";
-import Loader from "../../common/Loader";
 import AddMedicationModal from "../../components/AddMedicationModal";
 
 const Dashboard = () => {
@@ -32,7 +31,9 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return <Loader />;
+    return (
+      <h1 className="flex justify-center items-center text-2xl">Loading...</h1>
+    );
   }
 
   return (
