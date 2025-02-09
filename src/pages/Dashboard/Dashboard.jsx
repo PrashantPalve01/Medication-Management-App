@@ -31,6 +31,36 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Helper function to convert time string to Date object
+  const getTimeFromString = (timeStr, baseDate = new Date()) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    const date = new Date(baseDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  // Helper function to check if a time is upcoming
+  const isUpcoming = (timeStr) => {
+    const now = new Date();
+    const reminderTime = getTimeFromString(timeStr);
+    return reminderTime > now;
+  };
+
+  // Helper function to check if a dose is missed
+  const isMissed = (medication, timeStr) => {
+    const now = new Date();
+    const reminderTime = getTimeFromString(timeStr);
+    const lastTaken = medication.lastTaken?.toDate();
+
+    // If the reminder time is in the past and hasn't been taken today
+    return (
+      reminderTime < now &&
+      (!lastTaken ||
+        lastTaken.toDateString() !== now.toDateString() ||
+        lastTaken < reminderTime)
+    );
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -50,25 +80,20 @@ const Dashboard = () => {
         const missedList = [];
 
         const now = new Date();
-        const todayEnd = new Date(now);
-        todayEnd.setHours(23, 59, 59, 999);
+        const todayStart = new Date(now.setHours(0, 0, 0, 0));
+        const todayEnd = new Date(now.setHours(23, 59, 59, 999));
 
         medicationsSnapshot.forEach((doc) => {
           const medData = { id: doc.id, ...doc.data() };
           medicationsList.push(medData);
 
           // Process timing preferences for reminders
-          if (
-            medData.timingPreferences &&
-            Array.isArray(medData.timingPreferences)
-          ) {
-            medData.timingPreferences.forEach((timeStr) => {
-              const [hours, minutes] = timeStr.split(":");
-              const reminderTime = new Date(now);
-              reminderTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          const timings = medData.timingPreferences || [];
+          if (Array.isArray(timings)) {
+            timings.forEach((timeStr) => {
+              const reminderTime = getTimeFromString(timeStr);
 
-              // Only add to upcoming if it's later than current time
-              if (reminderTime > now) {
+              if (isUpcoming(timeStr)) {
                 upcomingList.push({
                   id: doc.id,
                   medicationName: medData.name,
@@ -77,47 +102,58 @@ const Dashboard = () => {
                   reminderTime,
                   instructions: medData.instructions,
                   type: medData.type,
+                  priority: medData.priority || "medium",
                 });
+              }
+
+              if (isMissed(medData, timeStr)) {
+                if (!missedList.find((m) => m.id === doc.id)) {
+                  missedList.push(medData);
+                }
               }
             });
           }
 
           // Check for renewals needed
-          const remainingQty = parseInt(medData.remainingQuantity);
-          if (remainingQty <= (medData.refillThreshold || 5)) {
+          const remainingQty = parseInt(medData.remainingQuantity) || 0;
+          const threshold = medData.refillThreshold || 5;
+          if (remainingQty <= threshold) {
             renewalList.push(medData);
-          }
-
-          // Check for missed doses
-          const lastTaken = medData.lastTaken?.toDate();
-          if (!lastTaken || lastTaken < now.setHours(0, 0, 0, 0)) {
-            missedList.push(medData);
           }
         });
 
         // Sort upcoming reminders by time
         upcomingList.sort((a, b) => a.reminderTime - b.reminderTime);
 
+        // Calculate adherence rate for today
+        const today = new Date();
+        const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+        const logsQuery = query(
+          logsRef,
+          where("timestamp", ">=", Timestamp.fromDate(todayStart)),
+          where("timestamp", "<=", Timestamp.fromDate(todayEnd))
+        );
+        const logsSnapshot = await getDocs(logsQuery);
+
+        const totalScheduledDoses = medicationsList.reduce(
+          (acc, med) => acc + (med.timingPreferences?.length || 0),
+          0
+        );
+
+        const takenDoses = logsSnapshot.docs.filter(
+          (doc) => doc.data().status === "taken"
+        ).length;
+
+        const calculatedRate =
+          totalScheduledDoses > 0
+            ? Math.round((takenDoses / totalScheduledDoses) * 100)
+            : 0;
+
         setMedications(medicationsList);
         setUpcomingReminders(upcomingList);
         setRenewalNeeded(renewalList);
         setMissedDoses(missedList);
-
-        // Calculate adherence rate
-        const adherenceStats = medicationsList.reduce(
-          (acc, med) => ({
-            taken: acc.taken + (med.dosesTaken || 0),
-            total: acc.total + (med.totalDoses || 0),
-          }),
-          { taken: 0, total: 0 }
-        );
-
-        setAdherenceRate(
-          adherenceStats.total > 0
-            ? Math.round((adherenceStats.taken / adherenceStats.total) * 100)
-            : 0
-        );
-
+        setAdherenceRate(calculatedRate);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -126,21 +162,22 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 60000);
+    const interval = setInterval(fetchDashboardData, 60000); // Refresh every minute
     return () => clearInterval(interval);
   }, []);
 
   const formatTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    const date = getTimeFromString(timeStr);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-48">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );

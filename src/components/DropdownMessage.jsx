@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import UserTwo from "../images/user/user-02.png";
 
 const DropdownMessage = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -93,7 +92,7 @@ const DropdownMessage = () => {
               to="/messages"
             >
               <div className="h-12.5 w-12.5 rounded-full">
-                <img src={UserTwo} alt="User" />
+                <img src="" alt="User" />
               </div>
 
               <div>

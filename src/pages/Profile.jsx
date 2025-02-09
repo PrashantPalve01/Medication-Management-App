@@ -2,7 +2,18 @@ import React, { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Phone, MapPin, Calendar, Activity, Mail } from "lucide-react";
+import {
+  User,
+  Phone,
+  MapPin,
+  Calendar,
+  Activity,
+  Mail,
+  Pill,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import Breadcrumb from "../components/Breadcrumb";
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -24,124 +35,190 @@ const ProfilePage = () => {
     fetchUserData();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(() => {
-      fetchUserData();
-    });
-    return () => unsubscribe();
-  }, []);
-
   if (!userData) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-pulse flex space-x-4">
-          <div className="rounded-full bg-gray-200 h-12 w-12"></div>
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-            <div className="h-4 bg-gray-200 rounded w-32"></div>
-          </div>
-        </div>
+      <div className="flex justify-center items-center h-48">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header Section */}
-          <div className="relative h-48 bg-gradient-to-r from-blue-600 to-indigo-600">
-            <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
-              <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
-                {userData.imageUrl ? (
-                  <img
-                    src={userData.imageUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <User size={48} className="text-gray-400" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Content */}
-          <div className="pt-20 pb-8 px-6 sm:px-12">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{userData.name}</h1>
-              <div className="flex items-center justify-center text-gray-600">
-                <Mail className="w-4 h-4 mr-2" />
-                <span>{userData.email}</span>
-              </div>
-            </div>
-
-            {/* Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <Phone className="w-5 h-5 text-blue-600 mr-2" />
-                  <h2 className="text-lg font-semibold text-gray-900">Contact</h2>
-                </div>
-                <p className="text-gray-700">{userData.phone || "Not provided"}</p>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <MapPin className="w-5 h-5 text-blue-600 mr-2" />
-                  <h2 className="text-lg font-semibold text-gray-900">Address</h2>
-                </div>
-                <p className="text-gray-700">{userData.address || "Not provided"}</p>
-              </div>
-            </div>
-
-            {/* Disease History */}
-            <div className="bg-gray-50 rounded-xl p-6 shadow-sm mb-8">
-              <div className="flex items-center mb-6">
-                <Activity className="w-5 h-5 text-blue-600 mr-2" />
-                <h2 className="text-lg font-semibold text-gray-900">Disease History</h2>
-              </div>
-              
-              {userData.diseaseHistory && userData.diseaseHistory.length > 0 ? (
-                <div className="space-y-4">
-                  {userData.diseaseHistory.map((disease, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-start justify-between bg-white p-4 rounded-lg shadow-sm"
-                    >
-                      <div>
-                        <h3 className="font-medium text-gray-900">{disease.condition}</h3>
-                        <div className="flex items-center mt-1 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>{disease.diagnosedDate || "Unknown"}</span>
-                        </div>
-                      </div>
+    <>
+      <Breadcrumb pageName="Profile" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+        {/* Profile Summary */}
+        <div className="col-span-1 xl:col-span-1 bg-white dark:bg-boxdark rounded-sm border border-stroke dark:border-strokedark shadow-default">
+          <div className="p-6">
+            <div className="flex flex-col items-center">
+              <div className="relative mb-4">
+                <div className="h-24 w-24 rounded-full border-4 border-white dark:border-boxdark shadow-lg overflow-hidden">
+                  {userData.imageUrl ? (
+                    <img
+                      src={userData.imageUrl}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gray-100 dark:bg-meta-4 flex items-center justify-center">
+                      <User size={32} className="text-gray-400" />
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">No disease history recorded</p>
-                </div>
-              )}
-            </div>
-
-            {/* Edit Button */}
-            <div className="flex justify-center">
+              </div>
+              <h2 className="text-xl font-semibold text-center text-black dark:text-white mb-2">
+                {userData.name}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {userData.email}
+              </p>
               <Link
                 to="/edit-profile"
-                className="inline-flex items-center px-8 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-black font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => setTimeout(fetchUserData, 500)}
+                className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-all duration-200"
               >
                 Edit Profile
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Medical Information */}
+        <div className="col-span-1 xl:col-span-3 bg-white dark:bg-boxdark rounded-sm border border-stroke dark:border-strokedark shadow-default">
+          <div className="border-b border-stroke dark:border-strokedark px-6 py-4">
+            <h3 className="text-xl font-semibold text-black dark:text-white">
+              Medical Information
+            </h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Basic Info */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">
+                  Basic Information
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Blood Type
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.bloodType || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Date of Birth
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.dateOfBirth || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Pill className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Allergies
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.allergies?.join(", ") || "None reported"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Emergency Contacts */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">
+                  Emergency Contact
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <User className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Name
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.emergencyContact?.name || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Phone className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Phone
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.emergencyContact?.phone || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Mail className="w-5 h-5 text-primary mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Relationship
+                      </p>
+                      <p className="font-medium text-black dark:text-white">
+                        {userData.emergencyContact?.relationship ||
+                          "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Disease History */}
+        <div className="col-span-1 xl:col-span-4 bg-white dark:bg-boxdark rounded-sm border border-stroke dark:border-strokedark shadow-default">
+          <div className="flex justify-between items-center border-b border-stroke dark:border-strokedark px-6 py-4">
+            <h3 className="text-xl font-semibold text-black dark:text-white">
+              Disease History
+            </h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userData.diseaseHistory?.map((disease, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-gray-50 dark:bg-meta-4 rounded-lg hover:bg-gray-100 dark:hover:bg-meta-3 transition-colors"
+                >
+                  <div className="flex items-center mb-2">
+                    <Activity className="w-5 h-5 text-primary mr-2" />
+                    <h4 className="font-semibold text-black dark:text-white">
+                      {disease.condition}
+                    </h4>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>Diagnosed: {disease.diagnosedDate}</span>
+                  </div>
+                </div>
+              ))}
+              {(!userData.diseaseHistory ||
+                userData.diseaseHistory.length === 0) && (
+                <div className="col-span-full text-center py-8">
+                  <Activity className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No disease history recorded
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

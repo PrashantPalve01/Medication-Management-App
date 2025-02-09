@@ -1,7 +1,6 @@
-// App.js
+import { Toaster } from "react-hot-toast";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
 import Loader from "./common/Loader";
 import routes from "./routes";
 import SignIn from "./pages/Authentication/SignIn";
@@ -17,15 +16,39 @@ function App() {
     setTimeout(() => setLoading(false), 1000);
   }, []);
 
-  return loading ? (
-    <Loader />
-  ) : (
+  if (loading) return <Loader />;
+
+  return (
     <>
       <Toaster
         position="top-right"
-        reverseOrder={false}
-        containerClassName="overflow-auto"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: "#28a745",
+            },
+          },
+          error: {
+            duration: 4000,
+            style: {
+              background: "#dc3545",
+            },
+          },
+          loading: {
+            duration: Infinity,
+            style: {
+              background: "#363636",
+            },
+          },
+        }}
       />
+
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<Landing />} />
