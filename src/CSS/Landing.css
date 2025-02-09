@@ -14,6 +14,27 @@
   --transition: all 0.3s ease-in-out;
 }
 
+theme-btn-wrapper {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.theme-btn-wrapper li {
+  list-style: none;
+}
+
+/* Dark mode transitions */
+.navbar,
+.sec3,
+.sec2,
+.model-section,
+.first-section {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
 /* Light Mode */
 body {
   background-color: var(--background-light);
@@ -25,7 +46,7 @@ body {
 }
 
 /* Dark Mode */
-.dark-mode body{
+.dark-mode body {
   background-color: var(--background-dark);
   color: var(--text-dark);
 }
@@ -41,7 +62,6 @@ body {
   border-bottom: 1px solid var(--border-light);
   z-index: 1000;
   transition: var(--transition);
- 
 }
 
 /* Dark Mode Navbar */
@@ -66,11 +86,11 @@ body {
   display: flex;
   align-items: center;
 }
- .nav-logo .head-name{
+.nav-logo .head-name {
   font-size: x-large;
   font-weight: bold;
-  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
- }
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+}
 .logo {
   height: 2.5rem;
   width: auto;
@@ -193,14 +213,13 @@ body {
     width: 70%;
     justify-content: center;
   }
-  .theme-btn{
+  .theme-btn {
     border-radius: 8px;
   }
 }
 
 /* Section Styles */
 section {
-
   padding: 5rem 4rem 2rem 2rem;
   max-width: 1200px;
   margin: auto;
@@ -208,18 +227,18 @@ section {
 
 /* First Section */
 
-.model-section{
+.model-section {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 2rem;
 }
-.model-section-first{
+.model-section-first {
   flex: 1;
   min-width: 300px;
 }
 .model-section-first h1,
-.model-section-first h2{
+.model-section-first h2 {
   font-size: 1.6rem;
   font-weight: bold;
   color: #3f61c0;
@@ -265,7 +284,9 @@ section {
 .model-section-second img {
   width: 100%;
   border-radius: 10px;
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  transition:
+    transform 0.3s ease-in-out,
+    box-shadow 0.3s ease-in-out;
 }
 
 .first-section-second img {
@@ -276,12 +297,11 @@ section {
 .model-section-second img {
   max-width: 500px;
 }
-.model-section-second img:hover{
-  transform: scale(1.1)
+.model-section-second img:hover {
+  transform: scale(1.1);
 }
 /* Hover Effect */
-.first-section-second img:hover
- {
+.first-section-second img:hover {
   transform: scale(1.1); /* Slight zoom-in effect */
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
 }
@@ -302,7 +322,7 @@ section {
 }
 
 /* Alternating Section Styles */
-.sec1{
+.sec1 {
   background-color: var(--background-light);
   transition: var(--transition);
 }
@@ -330,8 +350,7 @@ section {
     flex-direction: column;
     text-align: center;
   }
-  .model-section
-  {
+  .model-section {
     flex-direction: column-reverse;
     text-align: center;
   }

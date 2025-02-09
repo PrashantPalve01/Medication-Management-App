@@ -11,6 +11,8 @@ import {
   subMonths,
   parseISO,
   isToday,
+  isWithinInterval,
+  isBefore,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
 import {
@@ -25,13 +27,37 @@ import { db, auth } from "../../firebase";
 const MedicationCalendar = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState([]);
+  const [medicationHistory, setMedicationHistory] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
 
   useEffect(() => {
     fetchMedicationSchedule();
+    fetchMedicationHistory();
   }, [selectedDate]);
+
+  // Fetch medication history
+  const fetchMedicationHistory = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const historyRef = collection(db, "Users", user.uid, "medicationHistory");
+      const historySnapshot = await getDocs(historyRef);
+
+      const history = {};
+      historySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const key = `${data.medicationId}-${data.date}-${data.time}`;
+        history[key] = data.status; // 'taken' or 'missed'
+      });
+
+      setMedicationHistory(history);
+    } catch (error) {
+      console.error("Error fetching medication history:", error);
+    }
+  };
 
   const fetchMedicationSchedule = async () => {
     try {
@@ -41,7 +67,6 @@ const MedicationCalendar = () => {
       const start = startOfMonth(selectedDate);
       const end = endOfMonth(selectedDate);
 
-      // Fetch medications
       const medsRef = collection(db, "Users", user.uid, "medications");
       const medsQuery = query(medsRef, where("status", "==", "active"));
       const medsSnapshot = await getDocs(medsQuery);
@@ -54,22 +79,32 @@ const MedicationCalendar = () => {
           medData.timingPreferences &&
           Array.isArray(medData.timingPreferences)
         ) {
-          // Create events for each timing preference
+          const startDate = parseISO(medData.startDate);
+          const endDate = medData.endDate ? parseISO(medData.endDate) : null;
+
           medData.timingPreferences.forEach((time) => {
             const [hours, minutes] = time.split(":");
             const days = eachDayOfInterval({ start, end });
 
             days.forEach((day) => {
-              allEvents.push({
-                id: `${doc.id}-${format(day, "yyyy-MM-dd")}-${time}`,
-                medicationId: doc.id,
-                medicationName: medData.name,
-                dosage: medData.dosage,
-                time: time,
-                date: day,
-                type: "medication",
-                instructions: medData.instructions,
-              });
+              // Only create events within the medication's date range
+              if (
+                isWithinInterval(day, {
+                  start: startDate,
+                  end: endDate || new Date(2099, 11, 31), // Far future date if no end date
+                })
+              ) {
+                allEvents.push({
+                  id: `${doc.id}-${format(day, "yyyy-MM-dd")}-${time}`,
+                  medicationId: doc.id,
+                  medicationName: medData.name,
+                  dosage: medData.dosage,
+                  time: time,
+                  date: day,
+                  type: "medication",
+                  instructions: medData.instructions,
+                });
+              }
             });
           });
         }
@@ -80,6 +115,32 @@ const MedicationCalendar = () => {
     } catch (error) {
       console.error("Error fetching medication schedule:", error);
       setLoading(false);
+    }
+  };
+
+  const getEventStatus = (event) => {
+    const eventKey = `${event.medicationId}-${format(
+      event.date,
+      "yyyy-MM-dd"
+    )}-${event.time}`;
+    const isEventInPast = isBefore(
+      parseISO(`${format(event.date, "yyyy-MM-dd")}T${event.time}`),
+      new Date()
+    );
+
+    if (!isEventInPast) return "upcoming";
+    return medicationHistory[eventKey] || "missed";
+  };
+
+  const getEventClassName = (event) => {
+    const status = getEventStatus(event);
+    switch (status) {
+      case "taken":
+        return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "missed":
+        return "bg-red-100 text-red-800 hover:bg-red-200";
+      default:
+        return "bg-primary/10 text-primary hover:bg-primary/20";
     }
   };
 
@@ -109,6 +170,9 @@ const MedicationCalendar = () => {
               parseISO(`${format(event.date, "yyyy-MM-dd")}T${event.time}`),
               "h:mm a"
             )}
+          </p>
+          <p className="text-sm">
+            <strong>Status:</strong> {getEventStatus(event)}
           </p>
           <p className="text-sm">
             <strong>Dosage:</strong> {event.dosage}
@@ -188,7 +252,9 @@ const MedicationCalendar = () => {
                       setSelectedEvent(event);
                       setShowEventModal(true);
                     }}
-                    className="w-full text-left text-xs p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    className={`w-full text-left text-xs p-1.5 rounded transition-colors ${getEventClassName(
+                      event
+                    )}`}
                   >
                     {format(
                       parseISO(`${format(day, "yyyy-MM-dd")}T${event.time}`),

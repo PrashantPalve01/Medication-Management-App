@@ -1,20 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import {
-  Camera,
   User,
   Phone,
   MapPin,
-  Mail,
   Calendar,
+  Activity,
+  Mail,
+  Pill,
+  Clock,
+  AlertCircle,
+  Camera,
   Plus,
   X,
   Save,
   ArrowLeft,
-  Activity
 } from "lucide-react";
+import Breadcrumb from "../components/Breadcrumb";
 
 const EditProfilePage = () => {
   const [userData, setUserData] = useState({
@@ -23,41 +34,50 @@ const EditProfilePage = () => {
     phone: "",
     address: "",
     imageUrl: "",
-    diseaseHistory: []
+    bloodType: "",
+    dateOfBirth: "",
+    allergies: [],
+    emergencyContact: {
+      name: "",
+      phone: "",
+      relationship: "",
+    },
+    diseaseHistory: [],
   });
-  const [newDisease, setNewDisease] = useState({ condition: "", diagnosedDate: "" });
+  const [newDisease, setNewDisease] = useState({
+    condition: "",
+    diagnosedDate: "",
+  });
   const [isAddingDisease, setIsAddingDisease] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        const user = auth.currentUser;
-        if (user) {
-          const userDoc = await getDocs(
-            query(collection(db, "Users"), where("email", "==", user.email))
-          );
-          if (!userDoc.empty) {
-            const data = userDoc.docs[0].data();
-            setUserData({
-              ...data,
-              id: userDoc.docs[0].id,
-              diseaseHistory: data.diseaseHistory || []
-            });
-          }
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDocs(
+          query(collection(db, "Users"), where("email", "==", user.email))
+        );
+        if (!userDoc.empty) {
+          setUserData({ ...userDoc.docs[0].data(), id: userDoc.docs[0].id });
         }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setError("Failed to load user data");
       }
     };
     fetchUserData();
   }, []);
 
   const handleChange = (e) => {
-    setUserData({ ...userData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setUserData((prev) => ({
+        ...prev,
+        [parent]: { ...prev[parent], [child]: value },
+      }));
+    } else {
+      setUserData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -65,27 +85,32 @@ const EditProfilePage = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setUserData({ ...userData, imageUrl: reader.result });
+        setUserData((prev) => ({ ...prev, imageUrl: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleDiseaseChange = (e) => {
-    setNewDisease({ ...newDisease, [e.target.name]: e.target.value });
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      if (userData.id) {
+        const userRef = doc(db, "Users", userData.id);
+        await updateDoc(userRef, userData);
+        navigate("/profile");
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const addDisease = () => {
     if (newDisease.condition && newDisease.diagnosedDate) {
-      setUserData(prevState => ({
-        ...prevState,
-        diseaseHistory: [
-          ...(prevState.diseaseHistory || []),
-          {
-            condition: newDisease.condition,
-            diagnosedDate: newDisease.diagnosedDate
-          }
-        ]
+      setUserData((prev) => ({
+        ...prev,
+        diseaseHistory: [...(prev.diseaseHistory || []), newDisease],
       }));
       setNewDisease({ condition: "", diagnosedDate: "" });
       setIsAddingDisease(false);
@@ -93,94 +118,43 @@ const EditProfilePage = () => {
   };
 
   const removeDisease = (index) => {
-    setUserData(prevState => ({
-      ...prevState,
-      diseaseHistory: prevState.diseaseHistory.filter((_, i) => i !== index)
+    setUserData((prev) => ({
+      ...prev,
+      diseaseHistory: prev.diseaseHistory.filter((_, i) => i !== index),
     }));
-  };
-
-  const handleSave = async () => {
-    try {
-      setIsSaving(true);
-      setError("");
-      
-      if (userData.id) {
-        const userRef = doc(db, "Users", userData.id);
-        await updateDoc(userRef, {
-          name: userData.name,
-          phone: userData.phone,
-          address: userData.address,
-          imageUrl: userData.imageUrl,
-          diseaseHistory: userData.diseaseHistory || []
-        });
-        navigate("/profile");
-      }
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      setError("Failed to save changes");
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   if (!userData.email) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse space-y-4">
-          <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto" />
-          <div className="h-4 w-32 bg-gray-200 rounded mx-auto" />
-        </div>
+      <div className="flex justify-center items-center h-48">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => navigate("/profile")}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="text-lg font-medium">Back to Profile</span>
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Column - Profile Image */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <div className="relative group">
-                <div className="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-white shadow-lg">
+    <>
+      <Breadcrumb pageName="Edit Profile" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+        {/* Profile Image Section */}
+        <div className="col-span-1 xl:col-span-1">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="p-6">
+              <div className="relative mx-auto mb-6 h-36 w-36 rounded-full">
+                <div className="relative h-full w-full rounded-full border-4 border-white dark:border-boxdark shadow-lg">
                   {userData.imageUrl ? (
                     <img
                       src={userData.imageUrl}
                       alt="Profile"
-                      className="w-full h-full object-cover"
+                      className="h-full w-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <User size={48} className="text-gray-400" />
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-gray-100 dark:bg-meta-4">
+                      <User size={40} className="text-gray-400" />
                     </div>
                   )}
-                  <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full">
-                    <Camera className="w-8 h-8 text-white" />
+                  <label className="absolute bottom-0 right-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90">
+                    <Camera size={14} />
                     <input
                       type="file"
                       accept="image/*"
@@ -190,20 +164,30 @@ const EditProfilePage = () => {
                   </label>
                 </div>
               </div>
-              <p className="text-center text-sm text-gray-500 mt-4">
-                Click to upload new photo
-              </p>
+              <div className="flex flex-col items-center">
+                <h3 className="mb-1.5 text-xl font-semibold text-black dark:text-white text-center">
+                  {userData.name || "Your Name"}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {userData.email}
+                </p>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Column - Form Fields */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* Personal Information */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <h2 className="text-2xl font-semibold mb-6">Personal Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Basic Information */}
+        <div className="col-span-1 xl:col-span-3">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+              <h3 className="text-xl font-semibold text-black dark:text-white">
+                Basic Information
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
                     Full Name
                   </label>
                   <input
@@ -211,100 +195,173 @@ const EditProfilePage = () => {
                     name="name"
                     value={userData.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                    Blood Type
                   </label>
-                  <div className="flex items-center px-4 py-3 rounded-lg border border-gray-200 bg-gray-50">
-                    <Mail className="w-5 h-5 text-gray-400 mr-2" />
-                    <span className="text-gray-500">{userData.email}</span>
-                  </div>
+                  <input
+                    type="text"
+                    name="bloodType"
+                    value={userData.bloodType}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
                     Phone Number
                   </label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      name="phone"
-                      value={userData.phone}
-                      onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={userData.phone}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={userData.dateOfBirth}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
                     Address
                   </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      name="address"
-                      value={userData.address}
-                      onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    name="address"
+                    value={userData.address}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Disease History */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <Activity className="w-6 h-6 text-blue-600 mr-2" />
-                  <h2 className="text-2xl font-semibold">Disease History</h2>
+        {/* Emergency Contact */}
+        <div className="col-span-1 xl:col-span-2">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+              <h3 className="text-xl font-semibold text-black dark:text-white">
+                Emergency Contact
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                    Contact Name
+                  </label>
+                  <input
+                    type="text"
+                    name="emergencyContact.name"
+                    value={userData.emergencyContact?.name}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
                 </div>
+                <div>
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                    Contact Phone
+                  </label>
+                  <input
+                    type="text"
+                    name="emergencyContact.phone"
+                    value={userData.emergencyContact?.phone}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                    Relationship
+                  </label>
+                  <input
+                    type="text"
+                    name="emergencyContact.relationship"
+                    value={userData.emergencyContact?.relationship}
+                    onChange={handleChange}
+                    className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Disease History */}
+        <div className="col-span-1 xl:col-span-2">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-black dark:text-white">
+                  Disease History
+                </h3>
                 <button
                   onClick={() => setIsAddingDisease(true)}
-                  className="flex items-center px-4 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="flex items-center gap-2 rounded bg-primary px-3 py-1 text-white hover:bg-opacity-90"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New
+                  <Plus size={16} />
+                  Add
                 </button>
               </div>
-
+            </div>
+            <div className="p-6">
               {isAddingDisease && (
-                <div className="mb-6 p-6 border border-blue-100 bg-blue-50 rounded-lg">
-                  <div className="space-y-4">
+                <div className="mb-6 rounded border border-stroke p-4 dark:border-strokedark">
+                  <div className="grid gap-4">
                     <input
                       type="text"
-                      name="condition"
+                      placeholder="Condition"
                       value={newDisease.condition}
-                      onChange={handleDiseaseChange}
-                      placeholder="Disease/Condition"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) =>
+                        setNewDisease((prev) => ({
+                          ...prev,
+                          condition: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
                     />
                     <input
                       type="date"
-                      name="diagnosedDate"
                       value={newDisease.diagnosedDate}
-                      onChange={handleDiseaseChange}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) =>
+                        setNewDisease((prev) => ({
+                          ...prev,
+                          diagnosedDate: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary"
                     />
-                    <div className="flex justify-end space-x-3">
+                    <div className="flex justify-end gap-4">
                       <button
                         onClick={() => setIsAddingDisease(false)}
-                        className="px-4 py-2 text-black-600 hover:text-gray-800"
+                        className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={addDisease}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="rounded bg-primary px-4 py-2 text-white hover:bg-opacity-90"
                       >
-                        Add
+                        Add Disease
                       </button>
                     </div>
                   </div>
@@ -312,39 +369,123 @@ const EditProfilePage = () => {
               )}
 
               <div className="space-y-4">
-                {userData.diseaseHistory && userData.diseaseHistory.length > 0 ? (
-                  userData.diseaseHistory.map((disease, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg group hover:bg-gray-100 transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{disease.condition}</p>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {disease.diagnosedDate}
-                        </div>
+                {userData.diseaseHistory?.map((disease, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded border border-stroke p-4 hover:bg-gray-50 dark:border-strokedark dark:hover:bg-meta-4 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-black dark:text-white">
+                        {disease.condition}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <Calendar size={14} />
+                        {disease.diagnosedDate}
                       </div>
-                      <button
-                        onClick={() => removeDisease(index)}
-                        className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-all"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No disease history recorded</p>
+                    <button
+                      onClick={() => removeDisease(index)}
+                      className="rounded-full p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+                {(!userData.diseaseHistory ||
+                  userData.diseaseHistory.length === 0) && (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Activity
+                      size={32}
+                      className="text-gray-300 dark:text-gray-600 mb-2"
+                    />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      No disease history recorded
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Allergies Section */}
+        <div className="col-span-1 xl:col-span-2">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke px-6 py-4 dark:border-strokedark">
+              <h3 className="text-xl font-semibold text-black dark:text-white">
+                Allergies & Medical Notes
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                  Allergies
+                </label>
+                <textarea
+                  name="allergies"
+                  value={userData.allergies?.join(", ")}
+                  onChange={(e) =>
+                    setUserData((prev) => ({
+                      ...prev,
+                      allergies: e.target.value
+                        .split(",")
+                        .map((item) => item.trim()),
+                    }))
+                  }
+                  placeholder="Enter allergies (separate with commas)"
+                  className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary min-h-[100px]"
+                />
+              </div>
+              <div>
+                <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">
+                  Additional Medical Notes
+                </label>
+                <textarea
+                  name="medicalNotes"
+                  value={userData.medicalNotes}
+                  onChange={handleChange}
+                  placeholder="Enter any additional medical information"
+                  className="w-full rounded border border-stroke bg-transparent px-4 py-3 outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:focus:border-primary min-h-[100px]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="col-span-1 xl:col-span-4">
+          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="p-6">
+              <div className="flex flex-wrap gap-4 justify-end">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="inline-flex items-center justify-center gap-2.5 rounded-md border border-stroke px-6 py-3 hover:bg-gray-50 dark:border-strokedark dark:hover:bg-meta-4"
+                >
+                  <span className="text-black dark:text-white">Cancel</span>
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90 disabled:bg-opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
