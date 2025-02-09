@@ -10,6 +10,7 @@ const Medication = lazy(() => import("../pages/MedicationList"));
 const EditProfile = lazy(() => import("../pages/EditProfilePages"));
 const MedicationHistory = lazy(() => import("../pages/MedicationHistory"));
 const MedicationDetail = lazy(() => import("../components/MedicationDetail"));
+const RenewalRequest = lazy(() => import("../pages/RenewalRequest"));
 
 const coreRoutes = [
   {
@@ -61,6 +62,11 @@ const coreRoutes = [
     path: "/edit-profile",
     title: "Edit Profile",
     component: EditProfile,
+  },
+  {
+    path: "/medications/renewal",
+    title: "Medications Renewal",
+    component: RenewalRequest,
   },
 ];
 

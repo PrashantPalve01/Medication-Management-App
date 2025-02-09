@@ -43,14 +43,26 @@ const MedicationCalendar = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const historyRef = collection(db, "Users", user.uid, "medicationHistory");
-      const historySnapshot = await getDocs(historyRef);
+      // Get the start and end of the current month view
+      const start = startOfMonth(selectedDate);
+      const end = endOfMonth(selectedDate);
 
+      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+      const q = query(
+        logsRef,
+        where("timestamp", ">=", Timestamp.fromDate(start)),
+        where("timestamp", "<=", Timestamp.fromDate(end))
+      );
+
+      const querySnapshot = await getDocs(q);
       const history = {};
-      historySnapshot.forEach((doc) => {
+
+      querySnapshot.forEach((doc) => {
         const data = doc.data();
-        const key = `${data.medicationId}-${data.date}-${data.time}`;
-        history[key] = data.status; // 'taken' or 'missed'
+        // Create a key using the same format as we check in getEventStatus
+        const dateStr = format(data.timestamp.toDate(), "yyyy-MM-dd");
+        const key = `${data.medicationId}-${dateStr}-${data.time}`;
+        history[key] = data.status; // This will contain 'taken', 'skipped', or 'missed'
       });
 
       setMedicationHistory(history);
@@ -123,23 +135,38 @@ const MedicationCalendar = () => {
       event.date,
       "yyyy-MM-dd"
     )}-${event.time}`;
-    const isEventInPast = isBefore(
-      parseISO(`${format(event.date, "yyyy-MM-dd")}T${event.time}`),
-      new Date()
+    const eventDateTime = parseISO(
+      `${format(event.date, "yyyy-MM-dd")}T${event.time}`
     );
+    const now = new Date();
 
-    if (!isEventInPast) return "upcoming";
-    return medicationHistory[eventKey] || "missed";
+    // Check if we have a recorded status in medicationLogs
+    const status = medicationHistory[eventKey];
+
+    if (status) {
+      return status; // Will return 'taken', 'skipped', or 'missed'
+    }
+
+    // Only mark as missed if it's in the past and has no status
+    if (isBefore(eventDateTime, now)) {
+      return "missed";
+    }
+
+    // Future events
+    return "upcoming";
   };
 
+  // Update getEventClassName to match the history page styling
   const getEventClassName = (event) => {
     const status = getEventStatus(event);
     switch (status) {
       case "taken":
-        return "bg-green-100 text-green-800 hover:bg-green-200";
+        return "bg-success/10 text-success hover:bg-success/20";
+      case "skipped":
+        return "bg-warning/10 text-warning hover:bg-warning/20";
       case "missed":
-        return "bg-red-100 text-red-800 hover:bg-red-200";
-      default:
+        return "bg-danger/10 text-danger hover:bg-danger/20";
+      default: // upcoming
         return "bg-primary/10 text-primary hover:bg-primary/20";
     }
   };

@@ -14,6 +14,7 @@
     "url": "https://tailadmin.com"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.6",
     "apexcharts": "^3.41.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.3.0",

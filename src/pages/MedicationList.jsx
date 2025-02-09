@@ -38,6 +38,10 @@ const MedicationList = () => {
     }
   };
 
+  const handleMedicationAdded = () => {
+    fetchMedications(); // Refresh the medication list after adding
+  };
+
   const isExpired = (endDate) => {
     if (!endDate) return false;
     return new Date(endDate) < new Date();
@@ -200,6 +204,7 @@ const MedicationList = () => {
       <AddMedicationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onMedicationAdded={handleMedicationAdded}
       />
     </>
   );
