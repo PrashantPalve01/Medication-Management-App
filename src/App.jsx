@@ -3,7 +3,6 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
-import { toast } from "react-hot-toast";
 import Loader from "./common/Loader";
 import routes from "./routes";
 import SignIn from "./pages/Authentication/SignIn";
