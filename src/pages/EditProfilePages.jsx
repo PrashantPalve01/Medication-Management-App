@@ -26,6 +26,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Breadcrumb from "../components/Breadcrumb";
+import toast from "react-hot-toast";
 
 const EditProfilePage = () => {
   const [userData, setUserData] = useState({
@@ -97,6 +98,7 @@ const EditProfilePage = () => {
       if (userData.id) {
         const userRef = doc(db, "Users", userData.id);
         await updateDoc(userRef, userData);
+        toast.success("Profile updated successfully!");
         navigate("/profile");
       }
     } catch (error) {

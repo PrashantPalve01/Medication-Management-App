@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebase";
-import { toast } from "react-toastify";
-import { LogIn } from "lucide-react"; // Import the icon
+import { toast } from "react-hot-toast";
+import { LogIn } from "lucide-react";
+import DarkLogo from "../../images/logo/logo-dark.svg";
+import LightLogo from "../../images/logo/logo.svg";
 
 function SignIn() {
   const [email, setEmail] = useState("");
@@ -12,25 +14,56 @@ function SignIn() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast.success("Login Successful!", { position: "top-center" });
+      toast.success("Login Successful!");
       navigate("/dashboard");
     } catch (error) {
-      console.log("Error");
-      toast.error(error.message, { position: "top-center" });
+      // Handle specific Firebase auth errors
+      switch (error.code) {
+        case "auth/user-not-found":
+          toast.error("No account found with this email");
+          break;
+        case "auth/wrong-password":
+          toast.error("Incorrect password");
+          break;
+        case "auth/invalid-email":
+          toast.error("Invalid email address");
+          break;
+        case "auth/too-many-requests":
+          toast.error("Too many failed attempts. Please try again later");
+          break;
+        default:
+          toast.error("Failed to sign in. Please try again");
+      }
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
+      {/* Logo positioned above the box */}
+      <div className="mb-8">
+        <img src={DarkLogo} className="h-20 w-auto dark:hidden" alt="Logo" />
+        <img
+          src={LightLogo}
+          className="h-20  w-auto hidden dark:block"
+          alt="Logo"
+        />
+      </div>
+
       <div className="w-full max-w-md">
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
             <div className="flex items-center justify-center gap-3">
               <LogIn className="h-6 w-6 text-primary" />
               <h3 className="font-medium text-black dark:text-white">
-                Welcome Back
+                Create Account
               </h3>
             </div>
           </div>

@@ -1,137 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Check, X, Clock, Clock4, AlertTriangle } from "lucide-react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  increment,
-  serverTimestamp,
-} from "firebase/firestore";
+import { Bell, Check, X, Clock, AlarmClock } from "lucide-react";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { db, auth } from "../../firebase";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast"; // Add this import
 
-const CustomAlert = ({ children }) => (
-  <div className="flex items-center p-4 mb-4 bg-red-100 border border-red-400 rounded-lg">
-    <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-    <div className="text-red-700">{children}</div>
-  </div>
-);
+const SnoozeModal = ({ isOpen, onClose, onSnooze }) => {
+  const [snoozeTime, setSnoozeTime] = useState("5");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSnooze(parseInt(snoozeTime));
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+        <h3 className="mb-4 text-lg font-medium">Snooze Reminder</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="mb-2 block">Snooze for:</label>
+            <select
+              value={snoozeTime}
+              onChange={(e) => setSnoozeTime(e.target.value)}
+              className="w-full rounded border p-2"
+            >
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="60">1 hour</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded bg-gray-200 px-4 py-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded bg-primary px-4 py-2 text-white"
+            >
+              Snooze
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const MedicationReminder = () => {
   const [reminders, setReminders] = useState({ upcoming: [], past: [] });
   const [loading, setLoading] = useState(true);
-  const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
-  const [activeReminder, setActiveReminder] = useState(null);
-  const [selectedSnoozeTime, setSelectedSnoozeTime] = useState("15");
-  const [missedReminders, setMissedReminders] = useState([]);
-
-  // Check for missed medications every minute
-  useEffect(() => {
-    const checkMissedMedications = () => {
-      const now = new Date();
-      const currentTime = now.getTime();
-
-      const newUpcoming = [...reminders.upcoming];
-      const newPast = [...reminders.past];
-      const newMissed = [];
-
-      // Use filter instead of forEach to properly handle array modifications
-      const remainingUpcoming = newUpcoming.filter((reminder) => {
-        const reminderTime = reminder.reminderTime.getTime();
-        // If the reminder is more than 30 minutes past due
-        if (currentTime > reminderTime + 30 * 60000) {
-          // Update status to missed
-          const missedReminder = {
-            ...reminder,
-            status: "missed",
-          };
-          // Add to past and missed
-          newPast.unshift(missedReminder);
-          newMissed.push(missedReminder);
-          return false; // Remove from upcoming
-        }
-        return true; // Keep in upcoming
-      });
-
-      // Update states if there are changes
-      if (newMissed.length > 0) {
-        setReminders({
-          upcoming: remainingUpcoming,
-          past: newPast,
-        });
-        setMissedReminders((prev) => [...prev, ...newMissed]);
-
-        // Process notifications and updates
-        handleMissedMedications(newMissed);
-      }
-    };
-
-    // Request notification permission
-    if ("Notification" in window) {
-      Notification.requestPermission();
-    }
-
-    // Initial check
-    checkMissedMedications();
-
-    const interval = setInterval(checkMissedMedications, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, [reminders]);
-
-  // Render missed medication alerts
-  const MissedMedicationAlert = () => {
-    if (missedReminders.length === 0) return null;
-
-    return (
-      <CustomAlert>
-        <div>
-          You missed {missedReminders.length} medication
-          {missedReminders.length > 1 ? "s" : ""}:
-          {missedReminders.map((reminder, index) => (
-            <div key={index} className="ml-2 mt-1">
-              • {reminder.medicationName} at {reminder.displayTime}
-            </div>
-          ))}
-        </div>
-      </CustomAlert>
-    );
-  };
-
-  const snoozeOptions = [
-    { value: "5", label: "5 minutes" },
-    { value: "15", label: "15 minutes" },
-    { value: "30", label: "30 minutes" },
-    { value: "60", label: "1 hour" },
-  ];
-
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50"
-          onClick={onClose}
-        />
-        <div className="relative bg-white rounded-lg p-6 w-full max-w-md mx-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          {children}
-        </div>
-      </div>
-    );
-  };
+  const [showSnoozeModal, setShowSnoozeModal] = useState(false);
+  const [selectedReminder, setSelectedReminder] = useState(null);
+  const [snoozedReminders, setSnoozedReminders] = useState({});
 
   const formatTo12Hour = (time24h) => {
     try {
@@ -145,235 +74,19 @@ const MedicationReminder = () => {
     }
   };
 
+  const isUpcoming = (timeString) => {
+    const now = new Date();
+    const [hours, minutes] = timeString.split(":").map(Number);
+    const reminderTime = new Date();
+    reminderTime.setHours(hours, minutes, 0);
+    return reminderTime > now;
+  };
+
   const convertTimeToMinutes = (timeString) => {
     const [hours, minutes] = timeString.split(":").map(Number);
     return hours * 60 + minutes;
   };
 
-  const handleMissedMedications = async (missedMeds) => {
-    // Show notification for missed medications
-    if (Notification.permission === "granted") {
-      missedMeds.forEach((reminder) => {
-        new Notification("Missed Medication Alert", {
-          body: `You missed your ${reminder.medicationName} dose at ${reminder.displayTime}`,
-          icon: "/medication-icon.png",
-        });
-      });
-    }
-
-    // Update missed status in Firestore
-    missedMeds.forEach(async (reminder) => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        // Log the missed medication
-        const logData = {
-          medicationId: reminder.medicationId,
-          medicationName: reminder.medicationName,
-          time: reminder.time,
-          status: "missed",
-          timestamp: serverTimestamp(),
-          userId: user.uid,
-        };
-
-        await addDoc(
-          collection(db, "Users", user.uid, "medicationLogs"),
-          logData
-        );
-
-        // Update medication stats
-        const medicationRef = doc(
-          db,
-          "Users",
-          user.uid,
-          "medications",
-          reminder.medicationId
-        );
-
-        await updateDoc(medicationRef, {
-          missedCount: increment(1),
-          lastAction: {
-            status: "missed",
-            timestamp: serverTimestamp(),
-          },
-        });
-
-        toast.error(
-          `Missed medication: ${reminder.medicationName} at ${reminder.displayTime}`
-        );
-      } catch (error) {
-        console.error("Error updating missed medication:", error);
-      }
-    });
-  };
-
-  const handleSnooze = async (reminder, minutes) => {
-    const loadingToastId = toast.loading("Snoozing reminder...");
-
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        toast.error("Please sign in to continue", { id: loadingToastId });
-        return;
-      }
-
-      const snoozeTime = new Date(new Date().getTime() + minutes * 60000);
-      const newTimeString = `${snoozeTime
-        .getHours()
-        .toString()
-        .padStart(2, "0")}:${snoozeTime
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`;
-
-      const updatedReminder = {
-        ...reminder,
-        originalTime: reminder.time,
-        time: newTimeString,
-        displayTime: formatTo12Hour(newTimeString),
-        snoozed: true,
-      };
-
-      // Update in Firestore
-      const reminderRef = doc(
-        db,
-        "Users",
-        user.uid,
-        "medications",
-        reminder.medicationId
-      );
-      await updateDoc(reminderRef, {
-        snoozedTime: snoozeTime,
-        originalTime: reminder.time,
-      });
-
-      // Update local state
-      const updatedUpcoming = reminders.upcoming.map((r) =>
-        r.medicationId === reminder.medicationId ? updatedReminder : r
-      );
-      setReminders({ ...reminders, upcoming: updatedUpcoming });
-      setIsSnoozeModalOpen(false);
-
-      toast.success(`Reminder snoozed for ${minutes} minutes`, {
-        id: loadingToastId,
-      });
-    } catch (error) {
-      console.error("Error snoozing reminder:", error);
-      toast.error("Failed to snooze reminder. Please try again.", {
-        id: loadingToastId,
-      });
-    }
-  };
-
-  // Your existing fetchTodaysReminders function
-  const fetchTodaysReminders = async () => {
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // Fetch medication logs for today
-      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
-      const logsSnapshot = await getDocs(
-        query(logsRef, where("timestamp", ">=", today))
-      );
-      const todaysLogs = {};
-      logsSnapshot.forEach((doc) => {
-        const log = doc.data();
-        const key = `${log.medicationId}-${log.time}`;
-        todaysLogs[key] = log.status;
-      });
-
-      const medicationsRef = collection(db, "Users", user.uid, "medications");
-      const q = query(medicationsRef, where("status", "==", "active"));
-      const querySnapshot = await getDocs(q);
-
-      const now = new Date();
-      const allReminders = [];
-      querySnapshot.forEach((doc) => {
-        const medication = { id: doc.id, ...doc.data() };
-
-        const reminderTimes =
-          medication.timingPreferences?.length > 0
-            ? medication.timingPreferences
-            : generateDefaultTimes(medication.frequency);
-
-        reminderTimes.forEach((time) => {
-          const timeString = typeof time === "string" ? time : time.time;
-          const reminderKey = `${medication.id}-${timeString}`;
-
-          let status = todaysLogs[reminderKey];
-          if (!status) {
-            const [hours, minutes] = timeString.split(":").map(Number);
-            const reminderTime = new Date();
-            reminderTime.setHours(hours, minutes, 0);
-
-            if (reminderTime < new Date(now.getTime() - 30 * 60000)) {
-              status = "missed";
-            } else {
-              status = "pending";
-            }
-          }
-
-          allReminders.push({
-            medicationId: medication.id,
-            medicationName: medication.name,
-            dosage: medication.dosage,
-            time: timeString,
-            displayTime: formatTo12Hour(timeString),
-            instructions: medication.instructions,
-            type: medication.type,
-            priority: medication.priority,
-            status: status,
-            snoozed: medication.snoozedTime ? true : false,
-            reminderTime: new Date(
-              now.getFullYear(),
-              now.getMonth(),
-              now.getDate(),
-              ...timeString.split(":").map(Number)
-            ),
-          });
-        });
-      });
-
-      // Sort and split reminders
-      const sortedReminders = allReminders.sort((a, b) => {
-        return convertTimeToMinutes(a.time) - convertTimeToMinutes(b.time);
-      });
-
-      const upcoming = [];
-      const past = [];
-
-      sortedReminders.forEach((reminder) => {
-        const now = new Date();
-        if (reminder.reminderTime > now && reminder.status === "pending") {
-          upcoming.push(reminder);
-        } else {
-          if (reminder.status === "pending" && reminder.reminderTime < now) {
-            reminder.status = "missed";
-          }
-          past.push(reminder);
-        }
-      });
-
-      setReminders({ upcoming, past });
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching reminders:", error);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTodaysReminders();
-    const interval = setInterval(fetchTodaysReminders, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Your existing helper functions
   const generateDefaultTimes = (frequency) => {
     switch (frequency) {
       case "once":
@@ -386,6 +99,250 @@ const MedicationReminder = () => {
         return ["09:00"];
     }
   };
+
+  const logMissedMedication = async (reminder) => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+    try {
+      await addDoc(logsRef, {
+        medicationId: reminder.medicationId,
+        medicationName: reminder.medicationName,
+        dosage: reminder.dosage,
+        time: reminder.time,
+        displayTime: reminder.displayTime,
+        status: "missed",
+        timestamp: new Date(),
+        type: reminder.type,
+        priority: reminder.priority,
+        instructions: reminder.instructions,
+      });
+    } catch (error) {
+      console.error("Error logging missed medication:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodaysReminders();
+    const interval = setInterval(fetchTodaysReminders, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchTodaysReminders = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Fetch medications
+      const medicationsRef = collection(db, "Users", user.uid, "medications");
+      const medicationsQuery = query(
+        medicationsRef,
+        where("status", "==", "active")
+      );
+      const medicationsSnapshot = await getDocs(medicationsQuery);
+
+      // Fetch today's medication logs
+      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+      const logsQuery = query(logsRef, where("timestamp", ">=", today));
+      const logsSnapshot = await getDocs(logsQuery);
+
+      // Create a map of completed medications
+      const completedMeds = {};
+      logsSnapshot.forEach((doc) => {
+        const log = doc.data();
+        const key = `${log.medicationId}-${log.time}`;
+        completedMeds[key] = log.status;
+      });
+
+      const allReminders = [];
+      medicationsSnapshot.forEach((doc) => {
+        const medication = { id: doc.id, ...doc.data() };
+        const reminderTimes =
+          medication.timingPreferences?.length > 0
+            ? medication.timingPreferences
+            : generateDefaultTimes(medication.frequency);
+
+        reminderTimes.forEach((time) => {
+          const timeString = typeof time === "string" ? time : time.time;
+          const key = `${medication.id}-${timeString}`;
+          const status = completedMeds[key] || "pending";
+
+          allReminders.push({
+            medicationId: medication.id,
+            medicationName: medication.name,
+            dosage: medication.dosage,
+            time: timeString,
+            displayTime: formatTo12Hour(timeString),
+            instructions: medication.instructions,
+            type: medication.type,
+            priority: medication.priority,
+            status: status,
+          });
+        });
+      });
+
+      const upcoming = [];
+      const past = [];
+
+      allReminders.forEach((reminder) => {
+        const key = `${reminder.medicationId}-${reminder.time}`;
+        const existingStatus = completedMeds[key];
+
+        if (isUpcoming(reminder.time)) {
+          if (!existingStatus) {
+            upcoming.push({ ...reminder, status: "pending" });
+          }
+        } else {
+          if (existingStatus) {
+            past.push({ ...reminder, status: existingStatus });
+          } else {
+            past.push({ ...reminder, status: "missed" });
+            // Log missed status without using handleMedicationAction
+            logMissedMedication(reminder);
+          }
+        }
+      });
+
+      // Sort past reminders by time (most recent first)
+      past.sort(
+        (a, b) => convertTimeToMinutes(b.time) - convertTimeToMinutes(a.time)
+      );
+
+      setReminders({ upcoming, past });
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      setLoading(false);
+    }
+  };
+
+  const handleMedicationAction = async (reminder, status, silent = false) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        if (!silent) toast.error("Please sign in to update medication status");
+        return;
+      }
+
+      // Add to medication logs
+      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+      await addDoc(logsRef, {
+        medicationId: reminder.medicationId,
+        medicationName: reminder.medicationName,
+        dosage: reminder.dosage,
+        time: reminder.time,
+        displayTime: reminder.displayTime,
+        status: status,
+        timestamp: new Date(),
+        type: reminder.type,
+        priority: reminder.priority,
+        instructions: reminder.instructions,
+      });
+
+      // Update UI
+      setReminders((prev) => {
+        const updatedReminders = {
+          upcoming: prev.upcoming.filter(
+            (r) =>
+              !(
+                r.medicationId === reminder.medicationId &&
+                r.time === reminder.time
+              )
+          ),
+          past: [
+            { ...reminder, status },
+            ...prev.past.filter(
+              (r) =>
+                !(
+                  r.medicationId === reminder.medicationId &&
+                  r.time === reminder.time
+                )
+            ),
+          ].sort(
+            (a, b) =>
+              convertTimeToMinutes(b.time) - convertTimeToMinutes(a.time)
+          ),
+        };
+        return updatedReminders;
+      });
+
+      // Show toast notification if not silent
+      if (!silent) {
+        switch (status) {
+          case "taken":
+            toast.success(`${reminder.medicationName} marked as taken`);
+            break;
+          case "skipped":
+            toast.error(`${reminder.medicationName} marked as skipped`);
+            break;
+          case "missed":
+            toast.error(`${reminder.medicationName} was missed`);
+            break;
+          default:
+            break;
+        }
+      }
+    } catch (error) {
+      console.error(`Error marking medication as ${status}:`, error);
+      if (!silent) {
+        toast.error(`Failed to update ${reminder.medicationName} status`);
+      }
+    }
+  };
+
+  const handleSnooze = (reminder) => {
+    setSelectedReminder(reminder);
+    setShowSnoozeModal(true);
+  };
+
+  const handleSnoozeConfirm = (minutes) => {
+    const snoozeUntil = new Date();
+    snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
+
+    setSnoozedReminders({
+      ...snoozedReminders,
+      [selectedReminder.medicationId + selectedReminder.time]: {
+        reminder: selectedReminder,
+        snoozeUntil: snoozeUntil,
+      },
+    });
+
+    toast.success(
+      `${selectedReminder.medicationName} snoozed for ${minutes} minutes`
+    );
+  };
+
+  useEffect(() => {
+    const checkExpiredSnoozes = () => {
+      const now = new Date();
+      const updatedSnoozes = { ...snoozedReminders };
+      let changed = false;
+
+      Object.entries(updatedSnoozes).forEach(
+        ([key, { reminder, snoozeUntil }]) => {
+          if (snoozeUntil <= now) {
+            delete updatedSnoozes[key];
+            handleMedicationAction(reminder, "missed");
+            changed = true;
+          }
+        }
+      );
+
+      if (changed) {
+        setSnoozedReminders(updatedSnoozes);
+      }
+    };
+
+    const interval = setInterval(checkExpiredSnoozes, 60000);
+    return () => clearInterval(interval);
+  }, [snoozedReminders]);
 
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -400,81 +357,83 @@ const MedicationReminder = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "taken":
-        return "text-success";
-      case "skipped":
-      case "missed":
-        return "text-danger";
-      default:
-        return "text-warning";
-    }
-  };
+  const ReminderCard = ({ reminder, showActions }) => {
+    const isSnoozed = snoozedReminders[reminder.medicationId + reminder.time];
 
-  const ReminderCard = ({ reminder, showActions }) => (
-    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-      <div className="flex items-center space-x-4">
-        <Bell className={`w-5 h-5 ${getPriorityColor(reminder.priority)}`} />
-        <div>
-          <h4 className="font-medium">{reminder.medicationName}</h4>
-          <p className="text-sm text-gray-500">
-            {reminder.dosage} at {reminder.displayTime}
-            {reminder.snoozed && " (Snoozed)"}
-          </p>
-          {reminder.instructions && (
-            <p className="text-xs text-gray-400 mt-1">
-              {reminder.instructions}
+    return (
+      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+        <div className="flex items-center space-x-4">
+          <Bell className={`w-5 h-5 ${getPriorityColor(reminder.priority)}`} />
+          <div>
+            <h4 className="font-medium">{reminder.medicationName}</h4>
+            <p className="text-sm text-gray-500">
+              {reminder.dosage} at {reminder.displayTime}
             </p>
-          )}
-        </div>
-      </div>
-
-      {showActions && reminder.status === "pending" && (
-        <div className="flex space-x-2">
-          <button
-            onClick={() => {
-              setActiveReminder(reminder);
-              setIsSnoozeModalOpen(true);
-            }}
-            className="p-2 border rounded-md hover:bg-gray-50 flex items-center"
-          >
-            <Clock4 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleMedicationAction(reminder, "taken")}
-            className="p-2 bg-success text-white rounded-full hover:bg-opacity-90 transition-colors"
-            title="Mark as taken"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleMedicationAction(reminder, "skipped")}
-            className="p-2 bg-danger text-white rounded-full hover:bg-opacity-90 transition-colors"
-            title="Mark as skipped"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {!showActions && (
-        <div className="flex items-center">
-          <span
-            className={`flex items-center ${getStatusColor(reminder.status)}`}
-          >
-            {reminder.status === "taken" && <Check className="w-4 h-4 mr-1" />}
-            {reminder.status === "skipped" && <X className="w-4 h-4 mr-1" />}
-            {reminder.status === "missed" && <Clock className="w-4 h-4 mr-1" />}
-            {reminder.status === "pending" && (
-              <Clock className="w-4 h-4 mr-1" />
+            {reminder.instructions && (
+              <p className="text-xs text-gray-400 mt-1">
+                {reminder.instructions}
+              </p>
             )}
-            {reminder.status.charAt(0).toUpperCase() + reminder.status.slice(1)}
-          </span>
+            {isSnoozed && (
+              <p className="text-xs text-warning mt-1">
+                <AlarmClock className="w-4 h-4 inline mr-1" />
+                Snoozed until {isSnoozed.snoozeUntil.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
-      )}
-    </div>
-  );
+
+        {showActions && reminder.status === "pending" && !isSnoozed ? (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleMedicationAction(reminder, "taken")}
+              className="p-2 bg-success text-white rounded-full hover:bg-opacity-90 transition-colors"
+              title="Mark as taken"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleSnooze(reminder)}
+              className="p-2 bg-warning text-white rounded-full hover:bg-opacity-90 transition-colors"
+              title="Snooze"
+            >
+              <AlarmClock className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleMedicationAction(reminder, "skipped")}
+              className="p-2 bg-danger text-white rounded-full hover:bg-opacity-90 transition-colors"
+              title="Mark as skipped"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            {reminder.status === "taken" && (
+              <span className="text-success flex items-center">
+                <Check className="w-4 h-4 mr-1" /> Taken
+              </span>
+            )}
+            {reminder.status === "skipped" && (
+              <span className="text-danger flex items-center">
+                <X className="w-4 h-4 mr-1" /> Skipped
+              </span>
+            )}
+            {reminder.status === "missed" && (
+              <span className="text-danger flex items-center">
+                <Clock className="w-4 h-4 mr-1" /> Missed
+              </span>
+            )}
+            {reminder.status === "pending" && !isSnoozed && (
+              <span className="text-warning flex items-center">
+                <Clock className="w-4 h-4 mr-1" /> Pending
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -489,51 +448,6 @@ const MedicationReminder = () => {
       <h3 className="text-xl font-semibold mb-6">
         Today's Medication Schedule
       </h3>
-
-      {/* Snooze Modal */}
-      <MissedMedicationAlert />
-
-      <Modal
-        isOpen={isSnoozeModalOpen}
-        onClose={() => setIsSnoozeModalOpen(false)}
-        title="Snooze Reminder"
-      >
-        <div className="space-y-4">
-          {snoozeOptions.map((option) => (
-            <label
-              key={option.value}
-              className="flex items-center space-x-2 cursor-pointer"
-            >
-              <input
-                type="radio"
-                value={option.value}
-                checked={selectedSnoozeTime === option.value}
-                onChange={(e) => setSelectedSnoozeTime(e.target.value)}
-                className="w-4 h-4 text-blue-500"
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-          <div className="flex justify-end space-x-2 mt-4">
-            <button
-              onClick={() => setIsSnoozeModalOpen(false)}
-              className="px-4 py-2 border rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                if (activeReminder) {
-                  handleSnooze(activeReminder, parseInt(selectedSnoozeTime));
-                }
-              }}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              Confirm
-            </button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Upcoming Reminders Section */}
       <div className="mb-8">
@@ -576,6 +490,12 @@ const MedicationReminder = () => {
           )}
         </div>
       </div>
+
+      <SnoozeModal
+        isOpen={showSnoozeModal}
+        onClose={() => setShowSnoozeModal(false)}
+        onSnooze={handleSnoozeConfirm}
+      />
     </div>
   );
 };

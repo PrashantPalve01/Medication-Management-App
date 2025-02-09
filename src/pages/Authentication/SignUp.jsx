@@ -1,10 +1,12 @@
 import { auth, db } from "../../../firebase";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast"; // Changed to react-hot-toast
 import { useNavigate } from "react-router-dom";
-import { UserPlus } from "lucide-react"; // Import the icon
+import { UserPlus } from "lucide-react";
+import DarkLogo from "../../images/logo/logo-dark.svg";
+import LightLogo from "../../images/logo/logo.svg";
 
 function SignUp() {
   const [email, setEmail] = useState("");
@@ -15,28 +17,70 @@ function SignUp() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    // Form validation
+    if (!email || !password || !fname || !lname) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      const user = auth.currentUser;
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
       if (user) {
         await setDoc(doc(db, "Users", user.uid), {
           email: user.email,
           firstName: fname,
           lastName: lname,
+          createdAt: new Date().toISOString(),
         });
+
+        toast.success("Account created successfully!");
+        navigate("/signin");
       }
-      toast.success("User Registered Successfully!", {
-        position: "top-center",
-      });
-      navigate("/signin");
     } catch (error) {
-      console.log(error.message);
-      toast.error(error.message, { position: "bottom-center" });
+      // Handle specific Firebase auth errors
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          toast.error("An account with this email already exists");
+          break;
+        case "auth/invalid-email":
+          toast.error("Invalid email address");
+          break;
+        case "auth/weak-password":
+          toast.error("Password is too weak");
+          break;
+        case "auth/network-request-failed":
+          toast.error("Network error. Please check your connection");
+          break;
+        default:
+          toast.error("Failed to create account. Please try again");
+      }
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
+      {/* Logo positioned above the box */}
+      <div className="mb-8">
+        <img src={DarkLogo} className="h-20 w-auto dark:hidden" alt="Logo" />
+        <img
+          src={LightLogo}
+          className="h-20  w-auto hidden dark:block"
+          alt="Logo"
+        />
+      </div>
+
       <div className="w-full max-w-md">
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">

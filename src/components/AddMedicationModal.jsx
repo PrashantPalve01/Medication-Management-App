@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../../firebase";
 import { collection, addDoc } from "firebase/firestore";
+import { toast } from "react-hot-toast";
 
-const AddMedicationModal = ({ isOpen, onClose }) => {
+const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
   const [medicationData, setMedicationData] = useState({
     name: "",
     dosage: "",
@@ -81,6 +82,10 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Show loading toast
+    const loadingToast = toast.loading("Adding medication...");
+
     try {
       const user = auth.currentUser;
       if (user) {
@@ -98,9 +103,24 @@ const AddMedicationModal = ({ isOpen, onClose }) => {
             lastTracked: timestamp,
           },
         });
+
+        // Dismiss loading toast and show success toast
+        toast.dismiss(loadingToast);
+        toast.success("Medication added successfully!", {
+          duration: 3000,
+          position: "top-right",
+        });
+
+        onMedicationAdded();
         onClose();
       }
     } catch (error) {
+      // Dismiss loading toast and show error toast
+      toast.dismiss(loadingToast);
+      toast.error("Failed to add medication. Please try again.", {
+        duration: 4000,
+        position: "top-right",
+      });
       console.error("Error adding medication:", error);
     }
   };

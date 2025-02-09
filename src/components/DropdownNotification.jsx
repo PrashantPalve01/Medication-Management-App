@@ -1,11 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db, auth } from "../../firebase";
+import { Check, X, Clock } from "lucide-react";
 
 const DropdownNotification = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const trigger = useRef(null);
   const dropdown = useRef(null);
+
+  const fetchMedicationLogs = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+      const logsQuery = query(logsRef, orderBy("timestamp", "desc"), limit(10));
+      const logsSnapshot = await getDocs(logsQuery);
+
+      const logs = logsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate(),
+      }));
+
+      setNotifications(logs);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching medication logs:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMedicationLogs();
+  }, []);
 
   useEffect(() => {
     const clickHandler = ({ target }) => {
@@ -22,7 +57,6 @@ const DropdownNotification = () => {
     return () => document.removeEventListener("click", clickHandler);
   });
 
-  // close if the esc key is pressed
   useEffect(() => {
     const keyHandler = ({ keyCode }) => {
       if (!dropdownOpen || keyCode !== 27) return;
@@ -31,6 +65,45 @@ const DropdownNotification = () => {
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
   });
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "taken":
+        return <Check className="w-4 h-4 text-success" />;
+      case "skipped":
+        return <X className="w-4 h-4 text-danger" />;
+      case "missed":
+        return <Clock className="w-4 h-4 text-danger" />;
+      default:
+        return <Clock className="w-4 h-4 text-warning" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "taken":
+        return "text-success";
+      case "skipped":
+      case "missed":
+        return "text-danger";
+      default:
+        return "text-warning";
+    }
+  };
+
+  const formatTime = (date) => {
+    if (!date) return "";
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "";
+    return date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   return (
     <li className="relative">
@@ -68,73 +141,52 @@ const DropdownNotification = () => {
         }`}
       >
         <div className="px-4.5 py-3">
-          <h5 className="text-sm font-medium text-bodydark2">Notification</h5>
+          <h5 className="text-sm font-medium text-bodydark2">
+            Medication History
+          </h5>
         </div>
 
         <ul className="flex h-auto flex-col overflow-y-auto">
-          <li>
-            <Link
-              className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-              to="#"
-            >
-              <p className="text-sm">
-                <span className="text-black dark:text-white">
-                  Edit your information in a swipe
-                </span>{" "}
-                Sint occaecat cupidatat non proident, sunt in culpa qui officia
-                deserunt mollit anim.
-              </p>
-
-              <p className="text-xs">12 May, 2025</p>
-            </Link>
-          </li>
-          <li>
-            <Link
-              className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-              to="#"
-            >
-              <p className="text-sm">
-                <span className="text-black dark:text-white">
-                  It is a long established fact
-                </span>{" "}
-                that a reader will be distracted by the readable.
-              </p>
-
-              <p className="text-xs">24 Feb, 2025</p>
-            </Link>
-          </li>
-          <li>
-            <Link
-              className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-              to="#"
-            >
-              <p className="text-sm">
-                <span className="text-black dark:text-white">
-                  There are many variations
-                </span>{" "}
-                of passages of Lorem Ipsum available, but the majority have
-                suffered
-              </p>
-
-              <p className="text-xs">04 Jan, 2025</p>
-            </Link>
-          </li>
-          <li>
-            <Link
-              className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-              to="#"
-            >
-              <p className="text-sm">
-                <span className="text-black dark:text-white">
-                  There are many variations
-                </span>{" "}
-                of passages of Lorem Ipsum available, but the majority have
-                suffered
-              </p>
-
-              <p className="text-xs">01 Dec, 2024</p>
-            </Link>
-          </li>
+          {loading ? (
+            <li className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </li>
+          ) : notifications.length === 0 ? (
+            <li className="px-4.5 py-3 text-sm text-gray-500">
+              No medication history available
+            </li>
+          ) : (
+            notifications.map((log) => (
+              <li key={log.id}>
+                <div className="flex items-center gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4">
+                  <div className="flex-shrink-0">
+                    {getStatusIcon(log.status)}
+                  </div>
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium text-black dark:text-white">
+                        {log.medicationName}
+                      </p>
+                      <span className={`text-xs ${getStatusColor(log.status)}`}>
+                        {log.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {log.dosage} - Scheduled for {log.displayTime}
+                    </p>
+                    {log.instructions && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {log.instructions}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {formatDate(log.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </li>
