@@ -1,7 +1,7 @@
 # MediTrack - Intelligent Medication Management System
 
-![MediTrack Banner]((https://github.com/user-attachments/assets/a896e92e-fac0-4b26-94f3-c216e4dcc5ed)
-)
+![Uploading image.png…]()
+
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://meditrackapplication.netlify.app/)
 [![React](https://img.shields.io/badge/React-18.0.0-blue.svg)](https://reactjs.org/)
