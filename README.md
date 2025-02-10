@@ -164,22 +164,22 @@ meditrack/
 
 #### Prashant Palve
 - 🎨 **Role**: Team Lead & Frontend Developer
-- 🔗 [GitHub](https://github.com/prashant) | [LinkedIn](https://linkedin.com/in/prashant)
+- 🔗 [GitHub](https://github.com/PrashantPalve01) | [LinkedIn](https://linkedin.com/in/prashant)
 - 📧 prashant@example.com
 
 #### Soumya Madishetti
 - 🔧 **Role**: Backend Developer
-- 🔗 [GitHub](https://github.com/soumya) | [LinkedIn](https://linkedin.com/in/soumya)
+- 🔗 [GitHub](https://github.com/SoumyaMadishetti17) | [LinkedIn](https://linkedin.com/in/soumya)
 - 📧 soumya@example.com
 
 #### Karthik K
 - 🎯 **Role**: UI/UX Designer
-- 🔗 [GitHub](https://github.com/karthik) | [LinkedIn](https://linkedin.com/in/karthik)
+- 🔗 [GitHub](https://github.com/karthik-k44) | [LinkedIn]()
 - 📧 karthik@example.com
 
 #### Ranjeet Vishwakarma
 - 💻 **Role**: Full Stack Developer
-- 🔗 [GitHub](https://github.com/ranjeet) | [LinkedIn](https://linkedin.com/in/ranjeet)
+- 🔗 [GitHub](https://github.com/Ranjeet7875) | [LinkedIn](https://linkedin.com/in/ranjeet)
 - 📧 ranjeet@example.com
 
 ## 🤝 Contributing
