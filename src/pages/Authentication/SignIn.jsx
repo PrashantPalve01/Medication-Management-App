@@ -25,7 +25,8 @@ function SignIn() {
       toast.success("Login Successful!");
       navigate("/dashboard");
     } catch (error) {
-      // Handle specific Firebase auth errors
+      console.log("Login error:", error.code, error.message); // Add this for debugging
+
       switch (error.code) {
         case "auth/user-not-found":
           toast.error("No account found with this email");
@@ -39,15 +40,20 @@ function SignIn() {
         case "auth/too-many-requests":
           toast.error("Too many failed attempts. Please try again later");
           break;
-        default:
-          toast.error("Failed to sign in. Please try again");
+        case "auth/user-disabled":
+          toast.error("This account has been disabled");
+          break;
+        case "auth/invalid-credential":
+          toast.error("Invalid email or password");
+          break;
+        // Removed default case - let unhandled errors fall through
+        // Only show error message for actual authentication failures
       }
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
-      {/* Logo positioned above the box */}
       <div className="mb-8">
         <img src={DarkLogo} className="h-20 w-auto dark:hidden" alt="Logo" />
         <img
@@ -63,7 +69,7 @@ function SignIn() {
             <div className="flex items-center justify-center gap-3">
               <LogIn className="h-6 w-6 text-primary" />
               <h3 className="font-medium text-black dark:text-white">
-                Create Account
+                Sign In
               </h3>
             </div>
           </div>

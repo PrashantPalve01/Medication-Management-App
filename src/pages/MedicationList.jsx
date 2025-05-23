@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../../firebase";
 import { collection, query, getDocs } from "firebase/firestore";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import Breadcrumb from "../components/Breadcrumb";
 import AddMedicationModal from "../components/AddMedicationModal";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ const MedicationList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
+
   useEffect(() => {
     fetchMedications();
   }, []);
@@ -44,13 +45,42 @@ const MedicationList = () => {
 
   const isExpired = (endDate) => {
     if (!endDate) return false;
-    return new Date(endDate) < new Date();
+    const date =
+      typeof endDate === "string" ? parseISO(endDate) : new Date(endDate);
+    return isValid(date) && date < new Date();
+  };
+
+  // Helper function to safely format dates
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "No end date";
+
+    try {
+      // Handle different date formats
+      let date;
+      if (typeof dateValue === "string") {
+        date = parseISO(dateValue);
+      } else if (dateValue.toDate && typeof dateValue.toDate === "function") {
+        // Handle Firestore Timestamp
+        date = dateValue.toDate();
+      } else {
+        date = new Date(dateValue);
+      }
+
+      if (isValid(date)) {
+        return format(date, "MMM dd, yyyy");
+      } else {
+        return "Invalid date";
+      }
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Invalid date";
+    }
   };
 
   const filteredMedications = medications.filter((med) => {
     const matchesSearch =
-      med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      med.prescribedBy.toLowerCase().includes(searchTerm.toLowerCase());
+      med.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      med.prescribedBy?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || med.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -166,28 +196,30 @@ const MedicationList = () => {
                 >
                   <td className="border-b border-[#eee] py-5 px-4 pl-9 xl:pl-11">
                     <h5 className="font-medium text-black dark:text-white">
-                      {medication.name}
+                      {medication.name || "Unknown Medication"}
                     </h5>
-                    <p className="text-sm">{medication.prescribedBy}</p>
-                  </td>
-                  <td className="border-b border-[#eee] py-5 px-4">
-                    <p className="text-black dark:text-white">
-                      {medication.dosage}
+                    <p className="text-sm">
+                      {medication.prescribedBy || "Unknown Prescriber"}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4">
                     <p className="text-black dark:text-white">
-                      {medication.frequency}
+                      {medication.dosage || "N/A"}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4">
                     <p className="text-black dark:text-white">
-                      {medication.remainingQuantity}
+                      {medication.frequency || "N/A"}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4">
                     <p className="text-black dark:text-white">
-                      {format(new Date(medication.endDate), "MMM dd, yyyy")}
+                      {medication.remainingQuantity || "0"}
+                    </p>
+                  </td>
+                  <td className="border-b border-[#eee] py-5 px-4">
+                    <p className="text-black dark:text-white">
+                      {formatDate(medication.endDate)}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4">

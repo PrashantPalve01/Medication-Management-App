@@ -102,7 +102,7 @@ const RenewalRequest = () => {
       }
 
       setTimeout(() => {
-        navigate("/medications");
+        navigate("/medication");
       }, 2000);
     } catch (error) {
       console.error("Error submitting renewal request:", error);
@@ -190,10 +190,11 @@ const RenewalRequest = () => {
                 </button>
 
                 {requestStatus === "success" && (
-                  <div className="flex items-center gap-2 rounded-lg border border-meta-3 p-4 bg-meta-3/10 dark:bg-meta-3/20">
-                    <CheckCircle className="h-4 w-4 text-meta-3" />
-                    <p className="text-sm text-meta-3">
-                      Renewal request submitted successfully!
+                  <div className="flex items-center gap-2 rounded-lg border border-meta-1 p-4 bg-meta-1/10 dark:bg-meta-1/20">
+                    <X className="h-4 w-4 text-meta-1" />
+                    <p className="text-sm text-meta-1">
+                      This feature is temporarily unavailable. Please stay
+                      patient — it will be resolved soon!
                     </p>
                   </div>
                 )}

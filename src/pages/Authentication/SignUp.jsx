@@ -2,7 +2,7 @@ import { auth, db } from "../../../firebase";
 import { useState, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
-import { toast } from "react-hot-toast"; // Changed to react-hot-toast
+import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import DarkLogo from "../../images/logo/logo-dark.svg";
@@ -71,7 +71,6 @@ function SignUp() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-boxdark-2">
-      {/* Logo positioned above the box */}
       <div className="mb-8">
         <img src={DarkLogo} className="h-20 w-auto dark:hidden" alt="Logo" />
         <img

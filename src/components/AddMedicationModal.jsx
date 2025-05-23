@@ -4,7 +4,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 
 const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
-  const [medicationData, setMedicationData] = useState({
+  const initialMedicationData = {
     name: "",
     dosage: "",
     frequency: "",
@@ -25,11 +25,19 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
     refillThreshold: 5,
     sideEffects: [],
     priority: "medium",
-    timingPreferences: [], // Array to store multiple timing preferences
+    timingPreferences: [],
     lastTaken: null,
-  });
+  };
 
-  // Function to get number of doses based on frequency
+  const [medicationData, setMedicationData] = useState(initialMedicationData);
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setMedicationData(initialMedicationData);
+    }
+  }, [isOpen]);
+
   const getNumberOfDoses = (frequency) => {
     switch (frequency) {
       case "once":
@@ -83,37 +91,53 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check if required props are provided
+    if (!onMedicationAdded) {
+      toast.error(
+        "Configuration error: onMedicationAdded callback is required"
+      );
+      return;
+    }
+
     // Show loading toast
     const loadingToast = toast.loading("Adding medication...");
 
     try {
       const user = auth.currentUser;
-      if (user) {
-        const timestamp = new Date();
-        await addDoc(collection(db, "Users", user.uid, "medications"), {
-          ...medicationData,
-          createdAt: timestamp,
-          lastUpdated: timestamp,
-          status: "active",
-          adherenceStats: {
-            adherenceRate: 0,
-            totalDoses: 0,
-            dosesTaken: 0,
-            missedDoses: 0,
-            lastTracked: timestamp,
-          },
-        });
-
-        // Dismiss loading toast and show success toast
+      if (!user) {
         toast.dismiss(loadingToast);
-        toast.success("Medication added successfully!", {
-          duration: 3000,
-          position: "top-right",
-        });
-
-        onMedicationAdded();
-        onClose();
+        toast.error("User not authenticated");
+        return;
       }
+
+      const timestamp = new Date();
+      await addDoc(collection(db, "Users", user.uid, "medications"), {
+        ...medicationData,
+        createdAt: timestamp,
+        lastUpdated: timestamp,
+        status: "active",
+        adherenceStats: {
+          adherenceRate: 0,
+          totalDoses: 0,
+          dosesTaken: 0,
+          missedDoses: 0,
+          lastTracked: timestamp,
+        },
+      });
+
+      // Dismiss loading toast and show success toast
+      toast.dismiss(loadingToast);
+      toast.success("Medication added successfully!", {
+        duration: 3000,
+        position: "top-right",
+      });
+
+      // Reset form state
+      setMedicationData(initialMedicationData);
+
+      // Call callbacks
+      onMedicationAdded();
+      onClose();
     } catch (error) {
       // Dismiss loading toast and show error toast
       toast.dismiss(loadingToast);
@@ -123,6 +147,11 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
       });
       console.error("Error adding medication:", error);
     }
+  };
+
+  const handleClose = () => {
+    setMedicationData(initialMedicationData);
+    onClose();
   };
 
   // Render timing preference inputs based on frequency
@@ -165,7 +194,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                 Add New Medication
               </h3>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-gray-500 hover:text-gray-700 text-3xl w-6 h-6 flex items-center justify-center"
               >
                 ×
@@ -184,6 +213,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="text"
                     name="name"
+                    value={medicationData.name}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -197,6 +227,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   </label>
                   <select
                     name="type"
+                    value={medicationData.type}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -216,6 +247,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   </label>
                   <select
                     name="priority"
+                    value={medicationData.priority}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -234,6 +266,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="text"
                     name="dosage"
+                    value={medicationData.dosage}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -247,6 +280,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   </label>
                   <select
                     name="frequency"
+                    value={medicationData.frequency}
                     onChange={handleFrequencyChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -275,6 +309,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                     <input
                       type="checkbox"
                       name="reminder"
+                      checked={medicationData.reminder}
                       onChange={handleInputChange}
                       className="w-4 h-4"
                     />
@@ -292,6 +327,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="date"
                     name="startDate"
+                    value={medicationData.startDate}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -305,6 +341,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="date"
                     name="endDate"
+                    value={medicationData.endDate}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                   />
@@ -317,6 +354,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   </label>
                   <textarea
                     name="instructions"
+                    value={medicationData.instructions}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     rows="3"
@@ -330,6 +368,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="number"
                     name="remainingQuantity"
+                    value={medicationData.remainingQuantity}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -343,6 +382,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   <input
                     type="text"
                     name="prescribedBy"
+                    value={medicationData.prescribedBy}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     required
@@ -356,6 +396,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
                   </label>
                   <textarea
                     name="notes"
+                    value={medicationData.notes}
                     onChange={handleInputChange}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     rows="2"
@@ -366,7 +407,7 @@ const AddMedicationModal = ({ isOpen, onClose, onMedicationAdded }) => {
               <div className="mt-6 flex justify-end gap-4">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
                 >
                   Cancel

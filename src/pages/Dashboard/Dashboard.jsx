@@ -61,145 +61,152 @@ const Dashboard = () => {
     );
   };
 
-  useEffect(() => {
-    // Inside the fetchDashboardData function, replace the existing missed dose logic with:
+  const fetchDashboardData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
 
-    // Inside the fetchDashboardData function, update the timing logic:
+      // Fetch medications
+      const medicationsRef = collection(db, "Users", user.uid, "medications");
+      const medicationsQuery = query(
+        medicationsRef,
+        where("status", "==", "active")
+      );
+      const medicationsSnapshot = await getDocs(medicationsQuery);
+      const medicationsList = [];
+      const upcomingList = [];
+      const renewalList = [];
+      const missedList = [];
 
-    const fetchDashboardData = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0));
+      const todayEnd = new Date(now.setHours(23, 59, 59, 999));
 
-        // Fetch medications
-        const medicationsRef = collection(db, "Users", user.uid, "medications");
-        const medicationsQuery = query(
-          medicationsRef,
-          where("status", "==", "active")
-        );
-        const medicationsSnapshot = await getDocs(medicationsQuery);
-        const medicationsList = [];
-        const upcomingList = [];
-        const renewalList = [];
-        const missedList = [];
+      // Fetch today's logs
+      const logsRef = collection(db, "Users", user.uid, "medicationLogs");
+      const logsQuery = query(
+        logsRef,
+        where("timestamp", ">=", Timestamp.fromDate(todayStart)),
+        where("timestamp", "<=", Timestamp.fromDate(todayEnd))
+      );
+      const logsSnapshot = await getDocs(logsQuery);
 
-        const now = new Date();
-        const todayStart = new Date(now.setHours(0, 0, 0, 0));
-        const todayEnd = new Date(now.setHours(23, 59, 59, 999));
+      // Create a map of taken medications
+      const takenMeds = new Map();
+      logsSnapshot.docs.forEach((doc) => {
+        const logData = doc.data();
+        const key = `${logData.medicationId}-${logData.time}`;
+        takenMeds.set(key, logData.status);
 
-        // Fetch today's logs
-        const logsRef = collection(db, "Users", user.uid, "medicationLogs");
-        const logsQuery = query(
-          logsRef,
-          where("timestamp", ">=", Timestamp.fromDate(todayStart)),
-          where("timestamp", "<=", Timestamp.fromDate(todayEnd))
-        );
-        const logsSnapshot = await getDocs(logsQuery);
-
-        // Create a map of taken medications
-        const takenMeds = new Map();
-        logsSnapshot.docs.forEach((doc) => {
-          const logData = doc.data();
-          const key = `${logData.medicationId}-${logData.time}`;
-          takenMeds.set(key, logData.status);
-
-          if (logData.status === "missed") {
-            missedList.push({
-              id: logData.medicationId,
-              medicationName: logData.medicationName,
-              dosage: logData.dosage,
-              missedTime: logData.time,
-              type: logData.type,
-              status: "missed",
-            });
-          }
-        });
-
-        let totalScheduledDoses = 0;
-        let takenDoses = 0;
-
-        // Get current time for comparison
-        const currentTime = new Date();
-        const currentHours = currentTime.getHours();
-        const currentMinutes = currentTime.getMinutes();
-
-        medicationsSnapshot.forEach((doc) => {
-          const medData = { id: doc.id, ...doc.data() };
-          medicationsList.push(medData);
-
-          // Process each medication's timing preferences
-          const timings = medData.timingPreferences || [];
-          timings.forEach((timeStr) => {
-            const [hours, minutes] = timeStr.split(":").map(Number);
-
-            // Create a date object for this dose time
-            const doseTime = new Date();
-            doseTime.setHours(hours, minutes, 0, 0);
-
-            const logKey = `${doc.id}-${timeStr}`;
-            const logStatus = takenMeds.get(logKey);
-
-            // Check if this dose time is in the future for today
-            if (
-              hours > currentHours ||
-              (hours === currentHours && minutes > currentMinutes)
-            ) {
-              // This is an upcoming dose
-              upcomingList.push({
-                id: doc.id,
-                medicationName: medData.name,
-                dosage: medData.dosage,
-                displayTime: timeStr,
-                reminderTime: doseTime,
-                instructions: medData.instructions,
-                type: medData.type,
-                priority: medData.priority || "medium",
-              });
-            } else {
-              // This is a past dose
-              totalScheduledDoses++;
-              if (logStatus === "taken") {
-                takenDoses++;
-              }
-            }
+        if (logData.status === "missed") {
+          missedList.push({
+            id: logData.medicationId,
+            medicationName: logData.medicationName,
+            dosage: logData.dosage,
+            missedTime: logData.time,
+            type: logData.type,
+            status: "missed",
           });
+        }
+      });
 
-          // Check for renewals needed
-          const remainingQty = parseInt(medData.remainingQuantity) || 0;
-          const threshold = medData.refillThreshold || 5;
-          if (remainingQty <= threshold) {
-            renewalList.push(medData);
+      let totalScheduledDoses = 0;
+      let takenDoses = 0;
+
+      // Get current time for comparison
+      const currentTime = new Date();
+      const currentHours = currentTime.getHours();
+      const currentMinutes = currentTime.getMinutes();
+
+      medicationsSnapshot.forEach((doc) => {
+        const medData = { id: doc.id, ...doc.data() };
+        medicationsList.push(medData);
+
+        // Process each medication's timing preferences
+        const timings = medData.timingPreferences || [];
+        timings.forEach((timeStr) => {
+          const [hours, minutes] = timeStr.split(":").map(Number);
+
+          // Create a date object for this dose time
+          const doseTime = new Date();
+          doseTime.setHours(hours, minutes, 0, 0);
+
+          const logKey = `${doc.id}-${timeStr}`;
+          const logStatus = takenMeds.get(logKey);
+
+          // Check if this dose time is in the future for today
+          if (
+            hours > currentHours ||
+            (hours === currentHours && minutes > currentMinutes)
+          ) {
+            // This is an upcoming dose
+            upcomingList.push({
+              id: doc.id,
+              medicationName: medData.name,
+              dosage: medData.dosage,
+              displayTime: timeStr,
+              reminderTime: doseTime,
+              instructions: medData.instructions,
+              type: medData.type,
+              priority: medData.priority || "medium",
+            });
+          } else {
+            // This is a past dose
+            totalScheduledDoses++;
+            if (logStatus === "taken") {
+              takenDoses++;
+            }
           }
         });
 
-        // Calculate adherence rate
-        const adherenceRate =
-          totalScheduledDoses > 0
-            ? Math.round((takenDoses / totalScheduledDoses) * 100)
-            : 100;
+        // Check for renewals needed
+        const remainingQty = parseInt(medData.remainingQuantity) || 0;
+        const threshold = medData.refillThreshold || 5;
+        if (remainingQty <= threshold) {
+          renewalList.push(medData);
+        }
+      });
 
-        // Sort upcoming reminders by time
-        upcomingList.sort((a, b) => {
-          const timeA = a.displayTime.split(":").map(Number);
-          const timeB = b.displayTime.split(":").map(Number);
-          return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
-        });
+      // Calculate adherence rate
+      const adherenceRate =
+        totalScheduledDoses > 0
+          ? Math.round((takenDoses / totalScheduledDoses) * 100)
+          : 100;
 
-        setMedications(medicationsList);
-        setUpcomingReminders(upcomingList);
-        setRenewalNeeded(renewalList);
-        setMissedDoses(missedList);
-        setAdherenceRate(adherenceRate);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setLoading(false);
-      }
-    };
+      // Sort upcoming reminders by time
+      upcomingList.sort((a, b) => {
+        const timeA = a.displayTime.split(":").map(Number);
+        const timeB = b.displayTime.split(":").map(Number);
+        return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+      });
+
+      setMedications(medicationsList);
+      setUpcomingReminders(upcomingList);
+      setRenewalNeeded(renewalList);
+      setMissedDoses(missedList);
+      setAdherenceRate(adherenceRate);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 60000); // Refresh every minute
     return () => clearInterval(interval);
   }, []);
+
+  // Add this function to handle medication addition
+  const handleMedicationAdded = () => {
+    fetchDashboardData(); // Refresh the dashboard data
+  };
+
+  // Add this function to handle modal close
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
 
   const formatTime = (timeStr) => {
     const date = getTimeFromString(timeStr);
@@ -361,7 +368,8 @@ const Dashboard = () => {
 
       <AddMedicationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
+        onMedicationAdded={handleMedicationAdded}
       />
     </>
   );
